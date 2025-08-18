@@ -1,0 +1,416 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FFT Audio Visualizer - Matt Powers</title>
+    <link rel="stylesheet" href="style.css">
+    <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=<%= process.env.ADSENSE_CLIENT_ID %>" crossorigin="anonymous"></script>
+    
+</head>
+<body>
+    <header>
+        <nav>
+            <h1><a href="/">Matt Powers</a></h1>
+        </nav>
+    </header>
+
+    <main>
+        <section>
+            <h2>FFT Audio Visualizer</h2>
+            <div class="visualizer-container">
+                <div class="controls">
+                    <button id="startBtn" class="btn">Start Microphone</button>
+                    <div class="aspect-ratio-group">
+                        <p>Aspect ratio if video:</p>
+                        <label><input type="radio" name="aspectRatio" value="16:9" checked> 16:9</label>
+                        <label><input type="radio" name="aspectRatio" value="9:16"> 9:16</label>
+                    </div>
+                    <div class="download-group">
+                        <p>Select your download option:</p>
+                        <label><input type="radio" name="downloadType" value="audio" disabled> Audio Only</label>
+                        <label><input type="radio" name="downloadType" value="video" disabled> FFT Video Only</label>
+                        <label><input type="radio" name="downloadType" value="both" disabled> Both Audio and Video</label>
+                    </div>
+                    <button id="downloadBtn" class="btn" disabled>Download</button>
+                    <button id="downloadViz" class="btn">Download Visualization</button>
+                </div>
+                <canvas id="canvas" width="800" height="450"></canvas>
+            </div>
+            
+            <div class="story-section" id="storySection">
+                <h3>Story Generator</h3>
+                <div class="story-controls">
+                    <select title="adjective" id="adjective" onchange="updateSubjects()">
+                        <option value="">Select adjective...</option>
+                        <option value="funny">Funny</option>
+                        <option value="sweet">Sweet</option>
+                        <option value="scary">Scary</option>
+                        <option value="bedtime">Bedtime</option>
+                        <option value="custom">Custom...</option>
+                    </select>
+                    <input type="text" id="customAdjective" placeholder="Enter custom adjective">
+
+                    <select title="wordCount" id="wordCount">
+                        <option value="">Select word count...</option>
+                        <option value="200">200</option>
+                        <option value="500">500</option>
+                        <option value="1000">1000</option>
+                        <option value="custom">Custom...</option>
+                    </select>
+                    <input type="number" id="customWordCount" placeholder="Enter word count">
+
+                    <select title="subject" id="subject">
+                        <option value="">Select subject...</option>
+                        <option value="custom">Custom...</option>
+                    </select>
+                    <input type="text" id="customSubject" placeholder="Enter custom subject">
+                    
+                    <button onclick="generateStory()" class="btn">Generate Story</button>
+                </div>
+                <div id="story-display"></div>
+            </div>
+        </section>
+
+        <!-- AdSense Ad Unit -->
+        <div class="ad-container">
+            <ins class="adsbygoogle"
+                 data-ad-client="<%= process.env.ADSENSE_CLIENT_ID %>"
+                 data-ad-slot="<%= process.env.ADSENSE_SLOT_ID %>"
+                 data-ad-format="auto"
+                 data-full-width-responsive="true"></ins>
+            <script>
+                 var adsbygoogle = window.adsbygoogle || [];
+                 adsbygoogle.push({});
+            </script>
+        </div>
+    </main>
+
+    <script>
+        let audioContext, analyser, microphone, dataArray, canvas, ctx;
+        let isRunning = false, isRecording = false;
+        let mediaRecorder, recordedChunks = [];
+        let videoRecorder, videoChunks = [];
+        let videoOnlyRecorder, videoOnlyChunks = [];
+
+        // Initialize FFT controls after DOM loads
+        window.addEventListener('DOMContentLoaded', () => {
+            document.getElementById('startBtn').addEventListener('click', toggleVisualizer);
+            document.getElementById('downloadBtn').addEventListener('click', handleDownload);
+            document.getElementById('downloadViz').addEventListener('click', downloadVisualization);
+        });
+
+        document.querySelectorAll('input[name="aspectRatio"]').forEach(radio => {
+            radio.addEventListener('change', toggleAspectRatio);
+        });
+
+        async function toggleVisualizer() {
+            if (!isRunning) {
+                await startVisualizer();
+            } else {
+                stopVisualizer();
+            }
+        }
+
+        async function startVisualizer() {
+            try {
+                const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                
+                audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                analyser = audioContext.createAnalyser();
+                microphone = audioContext.createMediaStreamSource(stream);
+                
+                analyser.fftSize = 256;
+                const bufferLength = analyser.frequencyBinCount;
+                dataArray = new Uint8Array(bufferLength);
+                
+                microphone.connect(analyser);
+                
+                // Setup recording
+                mediaRecorder = new MediaRecorder(stream);
+                mediaRecorder.ondataavailable = e => recordedChunks.push(e.data);
+                
+                canvas = document.getElementById('canvas');
+                ctx = canvas.getContext('2d');
+                
+                isRunning = true;
+                document.getElementById('startBtn').textContent = 'Stop';
+                
+                // Auto-start recording
+                recordedChunks = [];
+                videoChunks = [];
+                videoOnlyChunks = [];
+                mediaRecorder.start();
+                
+                const canvasStream = canvas.captureStream(30);
+                const audioStream = mediaRecorder.stream;
+                const combinedStream = new MediaStream([...canvasStream.getTracks(), ...audioStream.getTracks()]);
+                
+                // Video with audio
+                videoRecorder = new MediaRecorder(combinedStream);
+                videoRecorder.ondataavailable = e => videoChunks.push(e.data);
+                videoRecorder.start();
+                
+                // Video only (no audio)
+                videoOnlyRecorder = new MediaRecorder(canvasStream);
+                videoOnlyRecorder.ondataavailable = e => videoOnlyChunks.push(e.data);
+                videoOnlyRecorder.start();
+                
+                isRecording = true;
+                draw();
+            } catch (err) {
+                alert('Microphone access denied');
+                console.error('Error accessing microphone:', err);
+                isRunning = false;
+            }
+        }
+
+        function stopVisualizer() {
+            if (audioContext) {
+                audioContext.close();
+            }
+            
+            if (isRecording) {
+                mediaRecorder.stop();
+                videoRecorder.stop();
+                videoOnlyRecorder.stop();
+                isRecording = false;
+                
+                // Enable download options
+                document.querySelectorAll('input[name="downloadType"]').forEach(radio => {
+                    radio.disabled = false;
+                });
+                document.getElementById('downloadBtn').disabled = false;
+            }
+            
+            isRunning = false;
+            document.getElementById('startBtn').textContent = 'Start Microphone';
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+        }
+
+        function draw() {
+            if (!isRunning) return;
+            
+            requestAnimationFrame(draw);
+            
+            analyser.getByteFrequencyData(dataArray);
+            
+            ctx.fillStyle = 'rgb(0, 0, 0)';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            
+            const barWidth = (canvas.width / dataArray.length) * 2.5;
+            let barHeight;
+            let x = 0;
+            
+            const selectedRatio = document.querySelector('input[name="aspectRatio"]:checked').value;
+            
+            if (selectedRatio === '9:16') {
+                // Portrait: visualization in bottom half
+                for (const [value] of dataArray.entries()) {
+                    barHeight = value * 1.5;
+                    
+                    ctx.fillStyle = `rgb(${barHeight + 100}, 50, 50)`;
+                    ctx.fillRect(x, canvas.height - barHeight / 4, barWidth, barHeight / 4);
+                    
+                    x += barWidth + 1;
+                }
+                
+                // Add profile picture in top half
+                const savedPicture = localStorage.getItem('profilePicture');
+                if (savedPicture) {
+                    const img = new Image();
+                    img.onload = function() {
+                        const size = Math.min(canvas.width * 0.6, canvas.height * 0.3);
+                        const x = (canvas.width - size) / 2;
+                        const y = canvas.height * 0.1;
+                        ctx.drawImage(img, x, y, size, size);
+                    };
+                    img.src = savedPicture;
+                }
+            } else {
+                // Landscape: visualization on left, profile on right
+                const vizWidth = canvas.width * 0.7;
+                const barWidthAdjusted = (vizWidth / dataArray.length) * 2.5;
+                
+                for (const [value] of dataArray.entries()) {
+                    barHeight = value * 1.5;
+                    
+                    ctx.fillStyle = `rgb(${barHeight + 100}, 50, 50)`;
+                    ctx.fillRect(x, canvas.height - barHeight / 2, barWidthAdjusted, barHeight / 2);
+                    
+                    x += barWidthAdjusted + 1;
+                }
+                
+                // Add profile picture on right side
+                const savedPicture = localStorage.getItem('profilePicture');
+                if (savedPicture) {
+                    const img = new Image();
+                    img.onload = function() {
+                        const size = Math.min(canvas.width * 0.25, canvas.height * 0.8);
+                        const x = canvas.width - size - 20;
+                        const y = (canvas.height - size) / 2;
+                        ctx.drawImage(img, x, y, size, size);
+                    };
+                    img.src = savedPicture;
+                }
+            }
+        }
+
+
+
+        function getTimestamp() {
+            return new Date().toISOString().replace(/[:.]/g, '-').slice(0, -5);
+        }
+
+        function downloadAudio() {
+            const blob = new Blob(recordedChunks, { type: 'audio/webm' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `audio-${getTimestamp()}.webm`;
+            a.click();
+            URL.revokeObjectURL(url);
+        }
+
+        function downloadVisualization() {
+            const link = document.createElement('a');
+            link.download = `visualization-${getTimestamp()}.png`;
+            link.href = canvas.toDataURL();
+            link.click();
+        }
+
+        function downloadVideo() {
+            const blob = new Blob(videoChunks, { type: 'video/webm' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `video-${getTimestamp()}.webm`;
+            a.click();
+            URL.revokeObjectURL(url);
+        }
+
+        function downloadVideoOnly() {
+            const blob = new Blob(videoOnlyChunks, { type: 'video/webm' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `fft-video-${getTimestamp()}.webm`;
+            a.click();
+            URL.revokeObjectURL(url);
+        }
+
+        function handleDownload() {
+            const selectedType = document.querySelector('input[name="downloadType"]:checked')?.value;
+            
+            if (selectedType === 'audio') {
+                downloadAudio();
+            } else if (selectedType === 'video') {
+                downloadVideoOnly();
+            } else if (selectedType === 'both') {
+                downloadAudio();
+                downloadVideo();
+            }
+        }
+
+        function toggleAspectRatio() {
+            const selectedRatio = document.querySelector('input[name="aspectRatio"]:checked').value;
+            const canvas = document.getElementById('canvas');
+            
+            if (selectedRatio === '9:16') {
+                canvas.width = 450;
+                canvas.height = 800;
+            } else {
+                canvas.width = 800;
+                canvas.height = 450;
+            }
+        }
+        
+        // Check subscription and show story generator
+        async function checkSubscription() {
+            const token = localStorage.getItem('token');
+            const userType = localStorage.getItem('userType');
+            
+            // Don't show for guests
+            if (userType === 'guest' || !token) return;
+            
+            try {
+                const response = await fetch('/auth/verify', {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                const data = await response.json();
+                if (data.user && data.user.subscription === 'full') {
+                    document.getElementById('storySection').style.display = 'block';
+                }
+            } catch (error) {
+                console.log('Subscription check failed');
+                console.error(error);
+            }
+        }
+        
+        // Check subscription after page loads
+        window.addEventListener('load', checkSubscription);
+        
+        // Story Generator Functions
+        const scarySubjects = ['urban legends', 'haunted technology', 'cryptids', 'werewolves', 'zombies', 'vampires'];
+        const otherSubjects = ['puppies', 'kitties', 'chickens', 'a random farm animal'];
+        
+        function updateSubjects() {
+            const adjective = document.getElementById('adjective').value;
+            const subjectSelect = document.getElementById('subject');
+            const customAdj = document.getElementById('customAdjective');
+            
+            customAdj.style.display = adjective === 'custom' ? 'block' : 'none';
+            
+            subjectSelect.innerHTML = '<option value="">Select subject...</option>';
+            const subjects = adjective === 'scary' ? scarySubjects : otherSubjects;
+            
+            subjects.forEach(subject => {
+                subjectSelect.innerHTML += `<option value="${subject}">${subject}</option>`;
+            });
+            subjectSelect.innerHTML += '<option value="custom">Custom...</option>';
+        }
+        
+        document.getElementById('wordCount').onchange = function() {
+            const custom = document.getElementById('customWordCount');
+            custom.style.display = this.value === 'custom' ? 'block' : 'none';
+        };
+        
+        document.getElementById('subject').onchange = function() {
+            const custom = document.getElementById('customSubject');
+            custom.style.display = this.value === 'custom' ? 'block' : 'none';
+        };
+        
+        async function generateStory() {
+            let adjective = document.getElementById('adjective').value;
+            let wordCount = document.getElementById('wordCount').value;
+            let subject = document.getElementById('subject').value;
+            
+            if (adjective === 'custom') adjective = document.getElementById('customAdjective').value;
+            if (wordCount === 'custom') wordCount = document.getElementById('customWordCount').value;
+            if (subject === 'custom') subject = document.getElementById('customSubject').value;
+            
+            if (!adjective || !wordCount || !subject) {
+                alert('Please fill in all fields');
+                return;
+            }
+            
+            document.getElementById('story-display').innerHTML = '<div class="loading">Generating story...</div>';
+            
+            const response = await fetch('/story/generate', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ adjective, wordCount, subject })
+            });
+            
+            const data = await response.json();
+            if (data.error) {
+                document.getElementById('story-display').innerHTML = `<div class="error">${data.error}</div>`;
+            } else {
+                document.getElementById('story-display').innerHTML = `<div class="story-text">${data.story}</div>`;
+            }
+        }
+    </script>
+    <script src="auth.js"></script>
+    <script src="ad-control.js"></script>
+</body>
+</html>

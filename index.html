@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Services Hub</title>
+    <link rel="stylesheet" href="style.css">
+    <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=<%= process.env.ADSENSE_CLIENT_ID %>" crossorigin="anonymous"></script>
+
+</head>
+<body>
+    <header>
+        <nav>
+            <h1>Matt Powers</h1>
+            <ul>
+                <li><a href="#home">Home</a></li>
+                <li class="dropdown">
+                    <span class="dropdown-toggle">Services</span>
+                    <ul class="dropdown-menu">
+                        <li><a href="/book-scanner">Book Scanner</a></li>
+                        <li><a href="/fft-visualizer">FFT audio visualizer</a></li>
+                        <li><a href="/math">Math Calculator</a></li>
+                        <li><a href="/story-generator">Story Generator</a></li>
+                    </ul>
+                </li>
+                <li><a href="/contact">Contact</a></li>
+                <li><a href="#about">About</a></li>
+            </ul>
+        </nav>
+    </header>
+
+    <main>
+        <section id="home">
+            <div class="profile-section">
+                <div class="profile-picture">
+                    <img id="profileImg" src="" alt="Profile" class="profile-img">
+                    <div id="profilePlaceholder" class="profile-placeholder">Add Profile Picture</div>
+                </div>
+                <input title="file-input" class="file-input" type="file" id="profileUpload" accept="image/*">
+                <button id="uploadBtn" class="btn">Upload Picture</button>
+                <button id="cameraBtn" class="btn">Take Picture</button>
+                <video class="capture-btn" id="cameraVideo" width="300" height="200"></video>
+                <button class="capture-btn" id="captureBtn" class="btn">Capture</button>
+                <button class="capture-btn" id="cancelBtn" class="btn">Cancel</button>
+            </div>
+            <h2>Welcome</h2>
+            <p>The place to learn all about me as a developer</p>
+        </section>
+
+        <!-- AdSense Ad Unit -->
+        <div class="ad-container">
+            <ins class="adsbygoogle"
+                 data-ad-client="pub-7284206181717863"
+                 data-ad-slot="YOUR_AD_SLOT_ID"
+                 data-ad-format="auto"
+                 data-full-width-responsive="true"></ins>
+            <script>
+                 var adsbygoogle = window.adsbygoogle || [];
+                 adsbygoogle.push({});
+            </script>
+        </div>
+
+        <section id="services">
+            <h2>Available Services</h2>
+            <div class="service-grid">
+                <div class="service-card">
+                    <h3>Book Scanner</h3>
+                    <p>Scan and digitize books</p>
+                    <a href="/service1" class="btn">Access</a>
+                </div>
+                <div class="service-card">
+                    <h3>FFT audio visualizer</h3>
+                    <p>Visualize audio frequencies in real-time</p>
+                    <a href="/fft-visualizer" class="btn">Access</a>
+                </div>
+                <div class="service-card">
+                    <h3>Math Calculator</h3>
+                    <p>Symbolic mathematics calculator</p>
+                    <a href="/math" class="btn">Access</a>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <script src="auth.js"></script>
+    <script src="ad-control.js"></script>
+    
+    <script src="script.js"></script>
+    <script>
+        let cameraStream;
+
+        document.getElementById('uploadBtn').addEventListener('click', () => {
+            document.getElementById('profileUpload').click();
+        });
+
+        document.getElementById('cameraBtn').addEventListener('click', async () => {
+            try {
+                cameraStream = await navigator.mediaDevices.getUserMedia({ video: true });
+                const video = document.getElementById('cameraVideo');
+                video.srcObject = cameraStream;
+                video.play();
+                
+                document.getElementById('cameraVideo').style.display = 'block';
+                document.getElementById('captureBtn').style.display = 'inline-block';
+                document.getElementById('cancelBtn').style.display = 'inline-block';
+            } catch (err) {
+                alert('Camera access denied');
+                console.error('Error accessing camera:', err);
+            }
+        });
+
+        document.getElementById('captureBtn').addEventListener('click', () => {
+            const video = document.getElementById('cameraVideo');
+            const canvas = document.createElement('canvas');
+            canvas.width = video.videoWidth;
+            canvas.height = video.videoHeight;
+            
+            const ctx = canvas.getContext('2d');
+            ctx.drawImage(video, 0, 0);
+            
+            const dataURL = canvas.toDataURL('image/png');
+            setPicture(dataURL);
+            stopCamera();
+        });
+
+        document.getElementById('cancelBtn').addEventListener('click', stopCamera);
+
+        function stopCamera() {
+            if (cameraStream) {
+                cameraStream.getTracks().forEach(track => track.stop());
+            }
+            document.getElementById('cameraVideo').style.display = 'none';
+            document.getElementById('captureBtn').style.display = 'none';
+            document.getElementById('cancelBtn').style.display = 'none';
+        }
+
+        function setPicture(dataURL) {
+            const img = document.getElementById('profileImg');
+            const placeholder = document.getElementById('profilePlaceholder');
+            
+            img.src = dataURL;
+            img.style.display = 'block';
+            placeholder.style.display = 'none';
+            
+            localStorage.setItem('profilePicture', dataURL);
+        }
+
+        document.getElementById('profileUpload').addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    setPicture(e.target.result);
+                };
+                reader.readAsDataURL(file);
+            }
+        });
+
+        // Load saved profile picture on page load
+        window.addEventListener('load', function() {
+            const savedPicture = localStorage.getItem('profilePicture');
+            if (savedPicture) {
+                const img = document.getElementById('profileImg');
+                const placeholder = document.getElementById('profilePlaceholder');
+                
+                img.src = savedPicture;
+                img.style.display = 'block';
+                placeholder.style.display = 'none';
+            }
+        });
+    </script>
+</body>
+</html>

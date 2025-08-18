@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Math Calculator - Matt Powers</title>
+    <link rel="stylesheet" href="style.css">
+    <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=<%= process.env.ADSENSE_CLIENT_ID %>" crossorigin="anonymous"></script>
+</head>
+<body>
+    <header>
+        <nav>
+            <h1><a href="/" class="nav-title">Matt Powers</a></h1>
+        </nav>
+    </header>
+
+    <main>
+        <section>
+            <h2>Math Calculator</h2>
+            <div class="calculator">
+                <input type="text" id="expression" placeholder="Enter expression (e.g., 2^3 + sqrt(16))">
+                <div class="button-grid">
+                    <button onclick="insertSymbol('^')" class="op-btn">x^y</button>
+                    <button onclick="insertSymbol('!')" class="op-btn">x!</button>
+                    <button onclick="insertSymbol('sqrt(')" class="op-btn">√x</button>
+                    <button onclick="insertSymbol('sin(')" class="op-btn">sin</button>
+                    <button onclick="insertSymbol('cos(')" class="op-btn">cos</button>
+                    <button onclick="insertSymbol('tan(')" class="op-btn">tan</button>
+                    <button onclick="insertSymbol('asin(')" class="op-btn">sin⁻¹</button>
+                    <button onclick="insertSymbol('acos(')" class="op-btn">cos⁻¹</button>
+                    <button onclick="insertSymbol('atan(')" class="op-btn">tan⁻¹</button>
+                    <button onclick="insertSymbol('ln(')" class="op-btn">ln</button>
+                    <button onclick="insertSymbol('π')" class="op-btn">π</button>
+                    <button onclick="insertSymbol('e')" class="op-btn">e</button>
+                    <button onclick="insertSymbol('i')" class="op-btn">i</button>
+                    <button onclick="calculate()" class="btn">Calculate</button>
+                </div>
+                <div id="result"></div>
+            </div>
+            
+            <div class="history">
+                <h3>Calculation History</h3>
+                <div id="history-log"></div>
+            </div>
+        </section>
+
+        <!-- AdSense Ad Unit -->
+        <div class="ad-container">
+            <ins class="adsbygoogle"
+                 data-ad-client="<%= process.env.ADSENSE_CLIENT_ID %>"
+                 data-ad-slot="<%= process.env.ADSENSE_SLOT_ID %>"
+                 data-ad-format="auto"
+                 data-full-width-responsive="true"></ins>
+            <script>
+                 var adsbygoogle = window.adsbygoogle || [];
+                 adsbygoogle.push({});
+            </script>
+        </div>
+    </main>
+
+    <script>
+        let calculationHistory = [];
+        
+        function insertSymbol(symbol) {
+            const input = document.getElementById('expression');
+            const cursorPos = input.selectionStart;
+            const value = input.value;
+            input.value = value.slice(0, cursorPos) + symbol + value.slice(cursorPos);
+            input.focus();
+            input.setSelectionRange(cursorPos + symbol.length, cursorPos + symbol.length);
+        }
+
+        async function calculate() {
+            const expression = document.getElementById('expression').value;
+            
+            const response = await fetch('/math/calculate', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ expression })
+            });
+            
+            const data = await response.json();
+            document.getElementById('result').innerHTML = `<h3>Result: ${data.result}</h3>`;
+            
+            // Add to history
+            calculationHistory.unshift({ expression, result: data.result });
+            if (calculationHistory.length > 10) calculationHistory.pop();
+            updateHistory();
+            
+            // Clear input
+            document.getElementById('expression').value = '';
+        }
+        
+        function updateHistory() {
+            const historyLog = document.getElementById('history-log');
+            historyLog.innerHTML = calculationHistory.map(calc => 
+                `<div class="history-item">${calc.expression} = ${calc.result}</div>`
+            ).join('');
+        }
+    </script>
+    <script src="ad-control.js"></script>
+</body>
+</html>

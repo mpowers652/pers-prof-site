@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Story Generator - Matt Powers</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <header>
+        <nav>
+            <h1><a href="/" class="nav-title">Matt Powers</a></h1>
+        </nav>
+    </header>
+
+    <main>
+        <section>
+            <h2>Story Generator</h2>
+            <div class="story-generator">
+                <div class="input-group">
+                    <select title="adjective" id="adjective" onchange="updateSubjects()">
+                        <option value="">Select adjective...</option>
+                        <option value="funny">Funny</option>
+                        <option value="sweet">Sweet</option>
+                        <option value="scary">Scary</option>
+                        <option value="bedtime">Bedtime</option>
+                        <option value="custom">Custom...</option>
+                    </select>
+                    <input type="text" id="customAdjective" placeholder="Enter custom adjective" style="display:none">
+                    
+                    <select title="word count" id="wordCount">
+                        <option value="">Select word count...</option>
+                        <option value="200">200</option>
+                        <option value="500">500</option>
+                        <option value="1000">1000</option>
+                        <option value="1500">1500</option>
+                        <option value="2000">2000</option>
+                        <option value="2500">2500</option>
+                        <option value="3000">3000</option>
+                        <option value="4000">4000</option>
+                        <option value="5000">5000</option>
+                        <option value="7000">7000</option>
+                        <option value="8000">8000</option>
+                        <option value="10000">10000</option>
+                        <option value="custom">Custom...</option>
+                    </select>
+                    <input type="number" id="customWordCount" placeholder="Enter word count" style="display:none">
+                    
+                    <select title="subject" id="subject">
+                        <option value="">Select subject...</option>
+                        <option value="custom">Custom...</option>
+                    </select>
+                    <input type="text" id="customSubject" placeholder="Enter custom subject" style="display:none">
+                </div>
+                <button onclick="generateStory()" class="btn">Generate Story</button>
+                <div id="story-output"></div>
+            </div>
+        </section>
+    </main>
+
+    <script src="auth.js"></script>
+    <script>
+        let customAdjectives = JSON.parse(localStorage.getItem('customAdjectives') || '[]');
+        let customScarySubjects = JSON.parse(localStorage.getItem('customScarySubjects') || '[]');
+        let customOtherSubjects = JSON.parse(localStorage.getItem('customOtherSubjects') || '[]');
+        
+        const scarySubjects = ['unaired TV episodes', 'unaired movies', 'unaired audio', 'missing mascots and characters from shows and movies coming to life and becoming hostile', 'TV or movie characters become real and hostile', 'urban legends', 'haunted technology', 'psychological issues such as dementia, schizophrenia or mania', 'supernatural entities, otherworldly in nature', 'cryptids', 'werewolves', 'mothman', 'skinwalkers', 'murderous cannibal neighbors', 'zombies', 'loch ness monster', 'the Rake', 'a random mythological creature come to life', 'alternate reality', 'an SCP entity or the foundation itself', 'creepypasta creatures or personas', 'possessed animals', 'cursed creature areas', 'imaginary friend becomes evil', 'time loop', 'Eyeless Jack', 'a haunted area', 'ghosts', 'leviathans similar to those shown in the Supernatural series', 'vampires', 'malicious local inhabitants', 'lost and found alien technology', ...customScarySubjects];
+        const otherSubjects = ['puppies', 'kitties', 'chickens', 'a random farm animal', ...customOtherSubjects];
+        
+        function updateSubjects() {
+            const adjective = document.getElementById('adjective').value;
+            const subjectSelect = document.getElementById('subject');
+            const customAdj = document.getElementById('customAdjective');
+            
+            customAdj.style.display = adjective === 'custom' ? 'block' : 'none';
+            
+            // Update adjective dropdown with custom options
+            const adjSelect = document.getElementById('adjective');
+            const currentAdj = adjSelect.value;
+            adjSelect.innerHTML = '<option value="">Select adjective...</option><option value="funny">Funny</option><option value="sweet">Sweet</option><option value="scary">Scary</option><option value="bedtime">Bedtime</option>';
+            customAdjectives.forEach(adj => {
+                adjSelect.innerHTML += `<option value="${adj}">${adj}</option>`;
+            });
+            adjSelect.innerHTML += '<option value="custom">Custom...</option>';
+            adjSelect.value = currentAdj;
+            
+            subjectSelect.innerHTML = '<option value="">Select subject...</option>';
+            const subjects = adjective === 'scary' ? scarySubjects : otherSubjects;
+            
+            subjects.forEach(subject => {
+                subjectSelect.innerHTML += `<option value="${subject}">${subject}</option>`;
+            });
+            subjectSelect.innerHTML += '<option value="custom">Custom...</option>';
+        }
+        
+        document.getElementById('wordCount').onchange = function() {
+            const custom = document.getElementById('customWordCount');
+            custom.style.display = this.value === 'custom' ? 'block' : 'none';
+        };
+        
+        document.getElementById('subject').onchange = function() {
+            const custom = document.getElementById('customSubject');
+            custom.style.display = this.value === 'custom' ? 'block' : 'none';
+        };
+        
+        async function generateStory() {
+            let adjective = document.getElementById('adjective').value;
+            let wordCount = document.getElementById('wordCount').value;
+            let subject = document.getElementById('subject').value;
+            
+            if (adjective === 'custom') adjective = document.getElementById('customAdjective').value;
+            if (wordCount === 'custom') wordCount = document.getElementById('customWordCount').value;
+            if (subject === 'custom') subject = document.getElementById('customSubject').value;
+            
+            if (!adjective || !wordCount || !subject) {
+                alert('Please fill in all fields');
+                return;
+            }
+            
+            document.getElementById('story-output').innerHTML = '<div class="loading">Generating story...</div>';
+            
+            const response = await fetch('/story/generate', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ adjective, wordCount, subject })
+            });
+            
+            const data = await response.json();
+            if (data.error) {
+                document.getElementById('story-output').innerHTML = `<div class="error">${data.error}</div>`;
+            } else {
+                document.getElementById('story-output').innerHTML = `<div class="story-result"><h3>Your Story:</h3><p>${data.story}</p></div>`;
+                
+                // Add viable custom options to lists
+                if (data.customAdded) {
+                    if (data.customAdded.adjective) {
+                        customAdjectives.push(data.customAdded.adjective);
+                        localStorage.setItem('customAdjectives', JSON.stringify(customAdjectives));
+                    }
+                    if (data.customAdded.subject) {
+                        const isScary = document.getElementById('adjective').value === 'scary';
+                        if (isScary) {
+                            customScarySubjects.push(data.customAdded.subject);
+                            localStorage.setItem('customScarySubjects', JSON.stringify(customScarySubjects));
+                        } else {
+                            customOtherSubjects.push(data.customAdded.subject);
+                            localStorage.setItem('customOtherSubjects', JSON.stringify(customOtherSubjects));
+                        }
+                    }
+                    updateSubjects();
+                }
+            }
+        }
+    </script>
+</body>
+</html>

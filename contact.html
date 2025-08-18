@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Contact Us - Matt Powers</title>
+    <link rel="stylesheet" href="style.css">
+    <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=<%= process.env.ADSENSE_CLIENT_ID %>" crossorigin="anonymous"></script>
+</head>
+<body>
+    <header>
+        <nav>
+            <h1><a href="/">Matt Powers</a></h1>
+        </nav>
+    </header>
+
+    <main>
+        <section>
+            <h2>Contact Us</h2>
+            <form id="contactForm" class="contact-form">
+                <input type="text" id="name" placeholder="Your Name" required>
+                <input type="email" id="email" placeholder="Your Email" required>
+                <select title="subject" id="subject" required>
+                    <option value="">Select Subject</option>
+                    <option value="Bug Report">Bug Report</option>
+                    <option value="Feature Request">Feature Request</option>
+                    <option value="General Inquiry">General Inquiry</option>
+                    <option value="Technical Support">Technical Support</option>
+                    <option value="Feedback">Feedback</option>
+                    <option value="Other">Other</option>
+                </select>
+                <textarea id="message" placeholder="Your Message" rows="5" required></textarea>
+                <button type="submit" class="btn">Send Message</button>
+            </form>
+            <div id="contactResult"></div>
+        </section>
+
+        <!-- AdSense Ad Unit -->
+        <div class="ad-container">
+            <ins class="adsbygoogle"
+                 data-ad-client="<%= process.env.ADSENSE_CLIENT_ID %>"
+                 data-ad-slot="<%= process.env.ADSENSE_SLOT_ID %>"
+                 data-ad-format="auto"
+                 data-full-width-responsive="true"></ins>
+            <script>
+                 var adsbygoogle = window.adsbygoogle || [];
+                 adsbygoogle.push({});
+            </script>
+        </div>
+    </main>
+    <footer>
+        <p>&copy; 2024 Matt Powers. All rights reserved.</p>
+    </footer>
+    <script>
+        document.getElementById('contactForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            const name = document.getElementById('name').value;
+            const email = document.getElementById('email').value;
+            const subject = document.getElementById('subject').value;
+            const message = document.getElementById('message').value;
+            
+            try {
+                const response = await fetch('/contact', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ name, email, subject, message })
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    document.getElementById('contactResult').innerHTML = 
+                        '<p style="color: green;">Thank you for your message! We\'ll get back to you soon.</p>';
+                    this.reset();
+                } else {
+                    document.getElementById('contactResult').innerHTML = 
+                        '<p style="color: red;">Failed to send message. Please try again.</p>';
+                }
+            } catch (error) {
+                document.getElementById('contactResult').innerHTML = 
+                    '<p style="color: red;">Error sending message. Please try again.</p>';
+                console.error('Error:', error);
+            }
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,11 @@
+.git
+.gitignore
+README.md
+.env
+.env.example
+node_modules/
+coverage/
+*.test.js
+jest.config.js
+mobile-oauth-app/
+Replit-BookScanner/
