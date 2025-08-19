@@ -58,18 +58,20 @@ bcrypt.hash(premiumPassword, 10).then(hashedPassword => {
 });
 
 // Passport configuration
-passport.use(new GoogleStrategy({
-    clientID: process.env.GMAIL_CLIENT_ID,
-    clientSecret: process.env.GMAIL_CLIENT_SECRET,
-    callbackURL: '/auth/google/callback'
-}, (accessToken, refreshToken, profile, done) => {
+if (process.env.GMAIL_CLIENT_ID && process.env.GMAIL_CLIENT_SECRET) {
+    passport.use(new GoogleStrategy({
+        clientID: process.env.GMAIL_CLIENT_ID,
+        clientSecret: process.env.GMAIL_CLIENT_SECRET,
+        callbackURL: '/auth/google/callback'
+    }, (accessToken, refreshToken, profile, done) => {
     let user = users.find(u => u.googleId === profile.id);
     if (!user) {
         user = { id: users.length + 1, googleId: profile.id, username: profile.displayName, email: profile.emails[0].value };
         users.push(user);
     }
     return done(null, user);
-}));
+    }));
+}
 
 passport.serializeUser((user, done) => done(null, user.id));
 passport.deserializeUser((id, done) => {
@@ -86,11 +88,7 @@ function requireAuth(req, res, next) {
         return next();
     }
     
-    if (req.path === '/') {
-        return res.redirect('/login');
-    }
-    
-    res.status(401).json({ message: 'Authentication required' });
+    res.redirect('/login');
 }
 
 // Proxy configuration for services
@@ -415,14 +413,14 @@ app.post('/auth/login', express.json(), async (req, res) => {
         return res.json({ success: false, message: 'Invalid credentials' });
     }
     
-    const token = jwt.sign({ id: user.id }, 'secret', { expiresIn: '24h' });
+    const token = jwt.sign({ id: user.id }, 'secret', { expiresIn: '10m' });
     res.json({ success: true, token });
 });
 
 app.get('/auth/google', passport.authenticate('google', { scope: ['profile', 'email'] }));
 
 app.get('/auth/google/callback', passport.authenticate('google', { failureRedirect: '/login' }), (req, res) => {
-    const token = jwt.sign({ id: req.user.id }, 'secret', { expiresIn: '24h' });
+    const token = jwt.sign({ id: req.user.id }, 'secret', { expiresIn: '10m' });
     res.redirect(`/?token=${token}`);
 });
 
@@ -460,9 +458,9 @@ app.get('/contact', (req, res) => {
 // Apply auth middleware to all routes except auth routes
 app.use(requireAuth);
 
-// Serve main page for all other routes
+// Redirect to login for all other routes
 app.get('*', (req, res) => {
-    res.sendFile(path.join(__dirname, 'index.html'));
+    res.redirect('/login');
 });
 
 if (process.env.NODE_ENV !== 'test') {
