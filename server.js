@@ -455,6 +455,11 @@ app.get('/contact', (req, res) => {
     }
 });
 
+// Root route redirects to login
+app.get('/', (req, res) => {
+    res.redirect('/login');
+});
+
 // Apply auth middleware to all routes except auth routes
 app.use(requireAuth);
 
