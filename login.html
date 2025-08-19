@@ -63,6 +63,11 @@
         function loginWithGoogle() {
             window.location.href = '/auth/google';
         }
+        
+        function loginAsGuest() {
+            localStorage.setItem('userType', 'guest');
+            window.location.href = '/';
+        }
     </script>
 </body>
 </html>

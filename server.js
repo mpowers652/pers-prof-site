@@ -82,7 +82,7 @@ passport.deserializeUser((id, done) => {
 // Authentication middleware
 function requireAuth(req, res, next) {
     const token = req.headers.authorization?.split(' ')[1] || req.query.token;
-    const isGuest = req.headers['x-user-type'] === 'guest';
+    const isGuest = req.headers['x-user-type'] === 'guest' || req.query.guest === 'true';
     
     if (token || isGuest || req.path === '/login' || req.path === '/register' || req.path.startsWith('/auth/')) {
         return next();
@@ -91,19 +91,26 @@ function requireAuth(req, res, next) {
     res.redirect('/login');
 }
 
-// Proxy configuration for services
+// Proxy configuration for services using subdomain format
 const services = {
-    '/service1': 'http://localhost:3001',
-    '/service2': 'http://localhost:3002'
+    'service1': 'http://localhost:3001',
+    'service2': 'http://localhost:3002'
 };
 
-// Setup proxies for each service
-Object.entries(services).forEach(([path, target]) => {
-    app.use(path, createProxyMiddleware({
-        target,
-        changeOrigin: true,
-        pathRewrite: { [`^${path}`]: '' }
-    }));
+// Setup proxies for subdomain routing
+app.use((req, res, next) => {
+    const host = req.get('host');
+    const subdomain = host.split('.')[0];
+    
+    if (services[subdomain]) {
+        return createProxyMiddleware({
+            target: services[subdomain],
+            changeOrigin: true,
+            pathRewrite: { '^/': '' }
+        })(req, res, next);
+    }
+    
+    next();
 });
 
 // Math calculator route
@@ -455,9 +462,14 @@ app.get('/contact', (req, res) => {
     }
 });
 
-// Root route redirects to login
+// Root route redirects to login or serves main page for guests
 app.get('/', (req, res) => {
-    res.redirect('/login');
+    const isGuest = req.headers['x-user-type'] === 'guest' || req.query.guest === 'true';
+    if (isGuest) {
+        res.sendFile(path.join(__dirname, 'index.html'));
+    } else {
+        res.redirect('/login');
+    }
 });
 
 // Apply auth middleware to all routes except auth routes
