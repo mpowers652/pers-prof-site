@@ -20,6 +20,24 @@ app.set('view engine', 'ejs');
 app.set('views', __dirname);
 app.engine('html', require('ejs').renderFile);
 
+// Subdomain routing middleware - must be first
+app.use((req, res, next) => {
+    const host = req.get('host');
+    const subdomain = host.split('.')[0];
+    
+    if (subdomain !== 'localhost' && subdomain !== host && req.url === '/') {
+        if (subdomain === 'fft') {
+            req.url = '/fft-visualizer';
+        } else if (subdomain === 'math') {
+            req.url = '/math';
+        } else if (subdomain === 'contact') {
+            req.url = '/contact';
+        }
+    }
+    
+    next();
+});
+
 // Serve static files
 app.use(express.static('.'));
 app.use(require('express-session')({ secret: 'secret', resave: false, saveUninitialized: false }));
@@ -91,27 +109,7 @@ function requireAuth(req, res, next) {
     res.redirect('/login');
 }
 
-// Proxy configuration for services using subdomain format
-const services = {
-    'service1': 'http://localhost:3001',
-    'service2': 'http://localhost:3002'
-};
 
-// Setup proxies for subdomain routing
-app.use((req, res, next) => {
-    const host = req.get('host');
-    const subdomain = host.split('.')[0];
-    
-    if (services[subdomain]) {
-        return createProxyMiddleware({
-            target: services[subdomain],
-            changeOrigin: true,
-            pathRewrite: { '^/': '' }
-        })(req, res, next);
-    }
-    
-    next();
-});
 
 // Math calculator route
 app.get('/math', (req, res) => {
