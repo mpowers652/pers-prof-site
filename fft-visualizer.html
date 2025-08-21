@@ -206,8 +206,8 @@
             
             if (selectedRatio === '9:16') {
                 // Portrait: visualization in bottom half
-                for (const [value] of dataArray.entries()) {
-                    barHeight = value * 1.5;
+                for (let i = 0; i < dataArray.length; i++) {
+                    barHeight = dataArray[i] * 1.5;
                     
                     ctx.fillStyle = `rgb(${barHeight + 100}, 50, 50)`;
                     ctx.fillRect(x, canvas.height - barHeight / 4, barWidth, barHeight / 4);
@@ -232,8 +232,8 @@
                 const vizWidth = canvas.width * 0.7;
                 const barWidthAdjusted = (vizWidth / dataArray.length) * 2.5;
                 
-                for (const [value] of dataArray.entries()) {
-                    barHeight = value * 1.5;
+                for (let i = 0; i < dataArray.length; i++) {
+                    barHeight = dataArray[i] * 1.5;
                     
                     ctx.fillStyle = `rgb(${barHeight + 100}, 50, 50)`;
                     ctx.fillRect(x, canvas.height - barHeight / 2, barWidthAdjusted, barHeight / 2);
