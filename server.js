@@ -110,28 +110,31 @@ bcrypt.hash(premiumPassword, 10).then(hashedPassword => {
     console.log(`Premium user created - Username: premium, Password: ${premiumPassword}`);
 });
 
-// Passport configuration
-if (process.env.GMAIL_CLIENT_ID && process.env.GMAIL_CLIENT_SECRET) {
-    passport.use(new GoogleStrategy({
-        clientID: process.env.GMAIL_CLIENT_ID,
-        clientSecret: process.env.GMAIL_CLIENT_SECRET,
-        callbackURL: '/auth/google/callback'
-    }, (accessToken, refreshToken, profile, done) => {
-    let user = users.find(u => u.googleId === profile.id);
-    if (!user) {
-        user = { 
-            id: users.length + 1, 
-            googleId: profile.id, 
-            username: profile.displayName, 
-            email: profile.emails[0].value,
-            googlePhoto: profile.photos?.[0]?.value,
-            role: profile.displayName === 'HorrorFreak1408' ? 'admin' : 'user',
-            subscription: profile.displayName === 'HorrorFreak1408' ? 'full' : 'basic'
-        };
-        users.push(user);
+// Passport configuration - initialize after secrets are loaded
+function initializePassport() {
+    if (process.env.GMAIL_CLIENT_ID && process.env.GMAIL_CLIENT_SECRET) {
+        passport.use(new GoogleStrategy({
+            clientID: process.env.GMAIL_CLIENT_ID,
+            clientSecret: process.env.GMAIL_CLIENT_SECRET,
+            callbackURL: '/auth/google/callback'
+        }, (accessToken, refreshToken, profile, done) => {
+            let user = users.find(u => u.googleId === profile.id);
+            if (!user) {
+                const isAdmin = profile.displayName === 'HorrorFreak1408' && profile.emails[0].value === 'cartoonsredbob@gmail.com';
+                user = { 
+                    id: users.length + 1, 
+                    googleId: profile.id, 
+                    username: profile.displayName, 
+                    email: profile.emails[0].value,
+                    googlePhoto: profile.photos?.[0]?.value,
+                    role: isAdmin ? 'admin' : 'user',
+                    subscription: isAdmin ? 'full' : 'basic'
+                };
+                users.push(user);
+            }
+            return done(null, user);
+        }));
     }
-    return done(null, user);
-    }));
 }
 
 passport.serializeUser((user, done) => done(null, user.id));
@@ -535,6 +538,7 @@ app.get('*', (req, res) => {
 
 if (process.env.NODE_ENV !== 'test') {
     loadPermanentSecrets().then(() => {
+        initializePassport();
         app.listen(PORT, () => {
             console.log(`Server running on http://localhost:${PORT}`);
         });
