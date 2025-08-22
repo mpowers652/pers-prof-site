@@ -43,7 +43,23 @@
                 <button class="capture-btn" id="captureBtn" class="btn">Capture</button>
                 <button class="capture-btn" id="cancelBtn" class="btn">Cancel</button>
             </div>
-            <h2>Welcome</h2>
+            <script>
+                (async function() {
+                    const token = localStorage.getItem('token');
+                    if (token) {
+                        try {
+                            const response = await fetch('/auth/verify');
+                            const data = await response.json();
+                            if (data.user?.username) {
+                                document.getElementById('profilePlaceholder').textContent = data.user.username;
+                            }
+                        } catch (error) {
+                            console.log('Could not load username');
+                        }
+                    }
+                })();
+            </script>
+            <h2>Welcome <span id="profilePlaceholder"></span></h2>
             <p>The place to learn all about me as a developer</p>
         </section>
 
@@ -156,16 +172,34 @@
             }
         });
 
-        // Load saved profile picture on page load
-        window.addEventListener('load', function() {
+        // Load profile picture on page load
+        window.addEventListener('load', async function() {
+            const token = localStorage.getItem('token');
+            const img = document.getElementById('profileImg');
+            const placeholder = document.getElementById('profilePlaceholder');
+            
+            // Check for user uploaded picture first
             const savedPicture = localStorage.getItem('profilePicture');
             if (savedPicture) {
-                const img = document.getElementById('profileImg');
-                const placeholder = document.getElementById('profilePlaceholder');
-                
                 img.src = savedPicture;
                 img.style.display = 'block';
                 placeholder.style.display = 'none';
+                return;
+            }
+            
+            // If logged in, try to get Google profile picture
+            if (token) {
+                try {
+                    const response = await fetch('/auth/verify');
+                    const data = await response.json();
+                    if (data.user?.googlePhoto) {
+                        img.src = data.user.googlePhoto;
+                        img.style.display = 'block';
+                        placeholder.style.display = 'none';
+                    }
+                } catch (error) {
+                    console.log('No Google profile photo available');
+                }
             }
         });
     </script>

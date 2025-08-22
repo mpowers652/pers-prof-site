@@ -84,7 +84,13 @@ if (process.env.GMAIL_CLIENT_ID && process.env.GMAIL_CLIENT_SECRET) {
     }, (accessToken, refreshToken, profile, done) => {
     let user = users.find(u => u.googleId === profile.id);
     if (!user) {
-        user = { id: users.length + 1, googleId: profile.id, username: profile.displayName, email: profile.emails[0].value };
+        user = { 
+            id: users.length + 1, 
+            googleId: profile.id, 
+            username: profile.displayName, 
+            email: profile.emails[0].value,
+            googlePhoto: profile.photos?.[0]?.value
+        };
         users.push(user);
     }
     return done(null, user);
@@ -443,7 +449,8 @@ app.get('/auth/verify', (req, res) => {
                 id: user.id, 
                 username: user.username, 
                 subscription: user.subscription,
-                hideAds: user.subscription === 'premium' || user.subscription === 'full'
+                hideAds: user.subscription === 'premium' || user.subscription === 'full',
+                googlePhoto: user.googlePhoto
             } 
         });
     } catch {
