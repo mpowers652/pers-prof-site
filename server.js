@@ -154,7 +154,7 @@ function initializePassport() {
                     id: users.length + 1, 
                     facebookId: profile.id, 
                     username: profile.displayName, 
-                    email: profile.emails?.[0]?.value,
+                    email: profile.emails?.[0]?.value || `${profile.id}@facebook.local`,
                     facebookPhoto: profile.photos?.[0]?.value,
                     role: 'user',
                     subscription: 'basic'
@@ -542,7 +542,8 @@ app.get('/auth/verify', (req, res) => {
                 username: user.username, 
                 subscription: user.subscription,
                 hideAds: user.subscription === 'premium' || user.subscription === 'full',
-                googlePhoto: user.googlePhoto
+                googlePhoto: user.googlePhoto,
+                facebookPhoto: user.facebookPhoto
             } 
         });
     } catch {
