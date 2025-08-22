@@ -1,6 +1,8 @@
 require('dotenv').config();
 const { SecretManagerServiceClient } = require('@google-cloud/secret-manager');
 const express = require('express');
+const https = require('https');
+const fs = require('fs');
 
 // Initialize Secret Manager client
 const secretClient = new SecretManagerServiceClient();
@@ -578,9 +580,22 @@ app.get('*', (req, res) => {
 if (process.env.NODE_ENV !== 'test') {
     loadPermanentSecrets().then(() => {
         initializePassport();
-        app.listen(PORT, () => {
-            console.log(`Server running on http://localhost:${PORT}`);
-        });
+        
+        // Try HTTPS first, fallback to HTTP
+        try {
+            const options = {
+                key: fs.readFileSync('server.key'),
+                cert: fs.readFileSync('server.cert')
+            };
+            https.createServer(options, app).listen(PORT, () => {
+                console.log(`HTTPS Server running on https://localhost:${PORT}`);
+            });
+        } catch (error) {
+            console.log('HTTPS certificates not found, starting HTTP server');
+            app.listen(PORT, () => {
+                console.log(`HTTP Server running on http://localhost:${PORT}`);
+            });
+        }
     }).catch(console.error);
 }
 
