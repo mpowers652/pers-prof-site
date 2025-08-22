@@ -495,18 +495,28 @@ section {
 }
 
 .oauth-btn {
-    background: #db4437;
-    width: 100%;
+    background: white;
+    border: 1px solid #dadce0;
+    width: 60px;
+    height: 60px;
+    border-radius: 25%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto 1rem;
+    padding: 0;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
 }
 
 .oauth-btn:hover {
-    background: #c23321;
+    background: #f8f9fa;
+    box-shadow: 0 4px 8px rgba(0,0,0,0.15);
 }
 
 .guest-btn {
     background: #6c757d;
     width: 100%;
-    margin-top: 0.5rem;
+    margin-top: 1rem;
 }
 
 .guest-btn:hover {
