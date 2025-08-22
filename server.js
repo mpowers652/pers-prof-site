@@ -1,5 +1,31 @@
 require('dotenv').config();
+const { SecretManagerServiceClient } = require('@google-cloud/secret-manager');
 const express = require('express');
+
+// Initialize Secret Manager client
+const secretClient = new SecretManagerServiceClient();
+
+// Function to get secret from Google Secret Manager
+async function getSecret(secretName) {
+    try {
+        const projectId = process.env.GOOGLE_CLOUD_PROJECT || '914087269150';
+        const [version] = await secretClient.accessSecretVersion({
+            name: `projects/${projectId}/secrets/${secretName}/versions/latest`,
+        });
+        return version.payload.data.toString();
+    } catch (error) {
+        console.log(`Secret ${secretName} not found, using env variable`);
+        return null;
+    }
+}
+
+// Load secrets at startup
+async function loadSecrets() {
+    process.env.GMAIL_CLIENT_ID = await getSecret('gmail-client-id') || process.env.GMAIL_CLIENT_ID;
+    process.env.GMAIL_CLIENT_SECRET = await getSecret('gmail-client-secret') || process.env.GMAIL_CLIENT_SECRET;
+    process.env.GMAIL_REFRESH_TOKEN = await getSecret('gmail-refresh-token') || process.env.GMAIL_REFRESH_TOKEN;
+    process.env.OPENAI_API_KEY = await getSecret('openai-api-key') || process.env.OPENAI_API_KEY;
+}
 const path = require('path');
 const { createProxyMiddleware } = require('http-proxy-middleware');
 const { evaluate, simplify } = require('mathjs');
@@ -89,7 +115,9 @@ if (process.env.GMAIL_CLIENT_ID && process.env.GMAIL_CLIENT_SECRET) {
             googleId: profile.id, 
             username: profile.displayName, 
             email: profile.emails[0].value,
-            googlePhoto: profile.photos?.[0]?.value
+            googlePhoto: profile.photos?.[0]?.value,
+            role: profile.displayName === 'HorrorFreak1408' ? 'admin' : 'user',
+            subscription: profile.displayName === 'HorrorFreak1408' ? 'full' : 'basic'
         };
         users.push(user);
     }
@@ -428,7 +456,12 @@ app.post('/auth/login', express.json(), async (req, res) => {
     res.json({ success: true, token });
 });
 
-app.get('/auth/google', passport.authenticate('google', { scope: ['profile', 'email'] }));
+app.get('/auth/google', (req, res, next) => {
+    if (!process.env.GMAIL_CLIENT_ID || !process.env.GMAIL_CLIENT_SECRET) {
+        return res.status(500).send('Google OAuth not configured');
+    }
+    passport.authenticate('google', { scope: ['profile', 'email'] })(req, res, next);
+});
 
 app.get('/auth/google/callback', passport.authenticate('google', { failureRedirect: '/login' }), (req, res) => {
     const token = jwt.sign({ id: req.user.id }, 'secret', { expiresIn: '10m' });
@@ -486,9 +519,11 @@ app.get('*', (req, res) => {
 });
 
 if (process.env.NODE_ENV !== 'test') {
-    app.listen(PORT, () => {
-        console.log(`Server running on http://localhost:${PORT}`);
-    });
+    loadSecrets().then(() => {
+        app.listen(PORT, () => {
+            console.log(`Server running on http://localhost:${PORT}`);
+        });
+    }).catch(console.error);
 }
 
 module.exports = app;

@@ -8,8 +8,9 @@ COPY package*.json ./
 # Install dependencies
 RUN npm install
 
-# Copy source code
+# Copy source code (excluding .env for security)
 COPY . .
+RUN rm -f .env
 
 # Create non-root user
 RUN addgroup -g 1001 -S nodejs && \
