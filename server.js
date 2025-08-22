@@ -26,6 +26,8 @@ async function loadPermanentSecrets() {
     process.env.GMAIL_REFRESH_TOKEN = await getSecret('GMAIL_REFRESH_TOKEN') || process.env.GMAIL_REFRESH_TOKEN;
     process.env.ADSENSE_CLIENT_ID = await getSecret('ADSENSE_CLIENT_ID') || process.env.ADSENSE_CLIENT_ID;
     process.env.ADSENSE_SLOT_ID = await getSecret('ADSENSE_SLOT_ID') || process.env.ADSENSE_SLOT_ID;
+    process.env.FACEBOOK_APP_ID = await getSecret('FACEBOOK_APP_ID') || process.env.FACEBOOK_APP_ID;
+    process.env.FACEBOOK_APP_SECRET = await getSecret('FACEBOOK_APP_SECRET') || process.env.FACEBOOK_APP_SECRET;
 }
 
 // Load conditional secrets on-demand
@@ -45,6 +47,7 @@ const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
 const passport = require('passport');
 const GoogleStrategy = require('passport-google-oauth20').Strategy;
+const FacebookStrategy = require('passport-facebook').Strategy;
 const OpenAI = require('openai');
 
 const app = express();
@@ -129,6 +132,30 @@ function initializePassport() {
                     googlePhoto: profile.photos?.[0]?.value,
                     role: isAdmin ? 'admin' : 'user',
                     subscription: isAdmin ? 'full' : 'basic'
+                };
+                users.push(user);
+            }
+            return done(null, user);
+        }));
+    }
+    
+    if (process.env.FACEBOOK_APP_ID && process.env.FACEBOOK_APP_SECRET) {
+        passport.use(new FacebookStrategy({
+            clientID: process.env.FACEBOOK_APP_ID,
+            clientSecret: process.env.FACEBOOK_APP_SECRET,
+            callbackURL: '/auth/facebook/callback',
+            profileFields: ['id', 'displayName', 'photos', 'email']
+        }, (accessToken, refreshToken, profile, done) => {
+            let user = users.find(u => u.facebookId === profile.id);
+            if (!user) {
+                user = { 
+                    id: users.length + 1, 
+                    facebookId: profile.id, 
+                    username: profile.displayName, 
+                    email: profile.emails?.[0]?.value,
+                    facebookPhoto: profile.photos?.[0]?.value,
+                    role: 'user',
+                    subscription: 'basic'
                 };
                 users.push(user);
             }
@@ -482,6 +509,18 @@ app.get('/auth/google', (req, res, next) => {
 });
 
 app.get('/auth/google/callback', passport.authenticate('google', { failureRedirect: '/login' }), (req, res) => {
+    const token = jwt.sign({ id: req.user.id }, 'secret', { expiresIn: '10m' });
+    res.redirect(`/?token=${token}`);
+});
+
+app.get('/auth/facebook', (req, res, next) => {
+    if (!process.env.FACEBOOK_APP_ID || !process.env.FACEBOOK_APP_SECRET) {
+        return res.status(500).send('Facebook OAuth not configured');
+    }
+    passport.authenticate('facebook', { scope: ['email'] })(req, res, next);
+});
+
+app.get('/auth/facebook/callback', passport.authenticate('facebook', { failureRedirect: '/login' }), (req, res) => {
     const token = jwt.sign({ id: req.user.id }, 'secret', { expiresIn: '10m' });
     res.redirect(`/?token=${token}`);
 });
