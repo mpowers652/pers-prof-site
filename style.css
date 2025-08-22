@@ -494,6 +494,13 @@ section {
     padding: 1rem;
 }
 
+.oauth-buttons {
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+            margin-bottom: 15px;
+        }
+
 .oauth-btn {
     background: white;
     border: 1px solid #dadce0;
