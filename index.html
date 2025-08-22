@@ -40,6 +40,8 @@
                 <input title="file-input" class="file-input" type="file" id="profileUpload" accept="image/*">
                 <button id="uploadBtn" class="btn">Upload Picture</button>
                 <button id="cameraBtn" class="btn">Take Picture</button>
+                <button id="useGoogleBtn" class="btn" style="display:none">Use Google Photo</button>
+                <button id="useUploadedBtn" class="btn" style="display:none">Use Uploaded Photo</button>
                 <video class="capture-btn" id="cameraVideo" width="300" height="200"></video>
                 <button class="capture-btn" id="captureBtn" class="btn">Capture</button>
                 <button class="capture-btn" id="cancelBtn" class="btn">Cancel</button>
@@ -56,6 +58,7 @@
                             }
                         } catch (error) {
                             console.log('Could not load username');
+                            console.error('Error fetching Google profile photo:', error);
                         }
                     }
                 })();
@@ -159,7 +162,12 @@
             img.style.display = 'block';
             placeholder.style.display = 'none';
             
-            localStorage.setItem('profilePicture', dataURL);
+            // Only save to localStorage if it's an uploaded/captured image
+            if (dataURL !== googlePhoto) {
+                uploadedPhoto = dataURL;
+                localStorage.setItem('profilePicture', dataURL);
+                showImageOptions();
+            }
         }
 
         document.getElementById('profileUpload').addEventListener('change', function(e) {
@@ -173,20 +181,34 @@
             }
         });
 
+        let googlePhoto = null;
+        let uploadedPhoto = null;
+        
+        function showImageOptions() {
+            const useGoogleBtn = document.getElementById('useGoogleBtn');
+            const useUploadedBtn = document.getElementById('useUploadedBtn');
+            
+            if (googlePhoto && uploadedPhoto) {
+                useGoogleBtn.style.display = 'inline-block';
+                useUploadedBtn.style.display = 'inline-block';
+            }
+        }
+        
+        document.getElementById('useGoogleBtn').addEventListener('click', () => {
+            if (googlePhoto) setPicture(googlePhoto);
+        });
+        
+        document.getElementById('useUploadedBtn').addEventListener('click', () => {
+            if (uploadedPhoto) setPicture(uploadedPhoto);
+        });
+        
         // Load profile picture on page load
         window.addEventListener('load', async function() {
             const token = localStorage.getItem('token');
             const img = document.getElementById('profileImg');
             const placeholder = document.getElementById('profilePlaceholder');
             
-            // Check for user uploaded picture first
-            const savedPicture = localStorage.getItem('profilePicture');
-            if (savedPicture) {
-                img.src = savedPicture;
-                img.style.display = 'block';
-                placeholder.style.display = 'none';
-                return;
-            }
+            uploadedPhoto = localStorage.getItem('profilePicture');
             
             // If logged in, try to get Google profile picture
             if (token) {
@@ -194,13 +216,25 @@
                     const response = await fetch('/auth/verify');
                     const data = await response.json();
                     if (data.user?.googlePhoto) {
-                        img.src = data.user.googlePhoto;
-                        img.style.display = 'block';
-                        placeholder.style.display = 'none';
+                        googlePhoto = data.user.googlePhoto;
                     }
                 } catch (error) {
                     console.log('No Google profile photo available');
                 }
+            }
+            
+            // Show options if both exist
+            showImageOptions();
+            
+            // Display uploaded photo first, then Google photo
+            if (uploadedPhoto) {
+                img.src = uploadedPhoto;
+                img.style.display = 'block';
+                placeholder.style.display = 'none';
+            } else if (googlePhoto) {
+                img.src = googlePhoto;
+                img.style.display = 'block';
+                placeholder.style.display = 'none';
             }
         });
     </script>

@@ -19,12 +19,21 @@ async function getSecret(secretName) {
     }
 }
 
-// Load secrets at startup
-async function loadSecrets() {
+// Load permanent secrets at startup
+async function loadPermanentSecrets() {
     process.env.GMAIL_CLIENT_ID = await getSecret('gmail-client-id') || process.env.GMAIL_CLIENT_ID;
     process.env.GMAIL_CLIENT_SECRET = await getSecret('gmail-client-secret') || process.env.GMAIL_CLIENT_SECRET;
     process.env.GMAIL_REFRESH_TOKEN = await getSecret('gmail-refresh-token') || process.env.GMAIL_REFRESH_TOKEN;
-    process.env.OPENAI_API_KEY = await getSecret('openai-api-key') || process.env.OPENAI_API_KEY;
+    process.env.ADSENSE_CLIENT_ID = await getSecret('adsense-client-id') || process.env.ADSENSE_CLIENT_ID;
+    process.env.ADSENSE_SLOT_ID = await getSecret('adsense-slot-id') || process.env.ADSENSE_SLOT_ID;
+}
+
+// Load conditional secrets on-demand
+async function loadConditionalSecret(secretName, envVar) {
+    if (!process.env[envVar]) {
+        process.env[envVar] = await getSecret(secretName) || process.env[envVar];
+    }
+    return process.env[envVar];
 }
 const path = require('path');
 const { createProxyMiddleware } = require('http-proxy-middleware');
@@ -226,9 +235,10 @@ app.post('/story/generate', express.json(), async (req, res) => {
         
         const prompt = `Write a ${adjective} story in ${wordCount} words about ${subject}.`;
         
+        const orgId = await loadConditionalSecret('openai-org-id', 'OPENAI_ORG_ID');
         const openai = new OpenAI({ 
             apiKey: user.openaiKey || process.env.OPENAI_API_KEY,
-            organization: process.env.OPENAI_ORG_ID
+            organization: orgId
         });
         
         const completion = await openai.chat.completions.create({
@@ -299,13 +309,17 @@ app.post('/contact', express.json(), async (req, res) => {
         console.log('Email sent successfully');
         
         // Send SMS notification
-        if (process.env.TWILIO_ACCOUNT_SID && process.env.TWILIO_AUTH_TOKEN) {
+        const twilioSid = await loadConditionalSecret('twilio-account-sid', 'TWILIO_ACCOUNT_SID');
+        const twilioToken = await loadConditionalSecret('twilio-auth-token', 'TWILIO_AUTH_TOKEN');
+        if (twilioSid && twilioToken) {
             try {
-                const client = twilio(process.env.TWILIO_ACCOUNT_SID, process.env.TWILIO_AUTH_TOKEN);
+                const twilioPhone = await loadConditionalSecret('twilio-phone-number', 'TWILIO_PHONE_NUMBER');
+                const notificationPhone = await loadConditionalSecret('notification-phone-number', 'NOTIFICATION_PHONE_NUMBER');
+                const client = twilio(twilioSid, twilioToken);
                 await client.messages.create({
                     body: `New contact form submission from ${name} (${email}): ${subject}`,
-                    from: process.env.TWILIO_PHONE_NUMBER,
-                    to: process.env.NOTIFICATION_PHONE_NUMBER
+                    from: twilioPhone,
+                    to: notificationPhone
                 });
                 console.log('SMS notification sent');
             } catch (smsError) {
@@ -418,9 +432,10 @@ app.post('/auth/register', express.json(), async (req, res) => {
     
     try {
         // Generate OpenAI API key for user
+        const orgId = await loadConditionalSecret('openai-org-id', 'OPENAI_ORG_ID');
         const openai = new OpenAI({ 
             apiKey: process.env.OPENAI_API_KEY,
-            organization: process.env.OPENAI_ORG_ID
+            organization: orgId
         });
         
         const apiKey = await openai.apiKeys.create({
@@ -519,7 +534,7 @@ app.get('*', (req, res) => {
 });
 
 if (process.env.NODE_ENV !== 'test') {
-    loadSecrets().then(() => {
+    loadPermanentSecrets().then(() => {
         app.listen(PORT, () => {
             console.log(`Server running on http://localhost:${PORT}`);
         });
