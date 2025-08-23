@@ -843,7 +843,19 @@ app.get('/', (req, res) => {
     const hasSessionToken = req.session.authToken;
     
     if (isGuest || hasSessionToken) {
-        res.sendFile(path.join(__dirname, 'index.html'));
+        let html = fs.readFileSync(path.join(__dirname, 'index.html'), 'utf8');
+        
+        // Inject session token into client-side localStorage
+        if (hasSessionToken) {
+            html = html.replace('</body>', `
+                <script>
+                    localStorage.setItem('token', '${hasSessionToken}');
+                    localStorage.removeItem('userType');
+                </script>
+            </body>`);
+        }
+        
+        res.send(html);
     } else {
         res.redirect('/login');
     }
