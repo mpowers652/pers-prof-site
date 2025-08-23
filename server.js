@@ -311,6 +311,18 @@ app.post('/contact', express.json(), async (req, res) => {
         return res.json({ success: false, message: 'All fields required' });
     }
     
+    // Handle data deletion request
+    if (subject === 'Data Deletion Request') {
+        const userIndex = users.findIndex(u => u.email === email);
+        if (userIndex !== -1) {
+            users.splice(userIndex, 1);
+            console.log(`User data deleted for email: ${email}`);
+            return res.json({ success: true, message: 'Your data has been deleted successfully.' });
+        } else {
+            return res.json({ success: true, message: 'No account found with that email address.' });
+        }
+    }
+    
     try {
         console.log('Getting access token...');
         const accessToken = await oauth2Client.getAccessToken();
@@ -360,7 +372,7 @@ app.post('/contact', express.json(), async (req, res) => {
             }
         }
         
-        res.json({ success: true, message: 'Email sent successfully!' });
+        res.json({ success: true, message: 'Message sent successfully!' });
     } catch (error) {
         console.error('Email error details:', error.message, error.code);
         res.json({ success: false, message: `Failed to send email: ${error.message}` });
@@ -561,6 +573,269 @@ app.get('/contact', (req, res) => {
     }
 });
 
+// Privacy Policy route
+app.get('/privacy-policy', (req, res) => {
+    res.sendFile(path.join(__dirname, 'privacy-policy.html'));
+});
+
+// Archived Privacy Policy route
+app.get('/privacy-policy/archive/:filename', (req, res) => {
+    const filename = req.params.filename;
+    const archivePath = path.join(__dirname, 'archives', filename);
+    
+    if (fs.existsSync(archivePath)) {
+        res.sendFile(archivePath);
+    } else {
+        // Return list of all archived policies
+        const archiveDir = path.join(__dirname, 'archives');
+        if (fs.existsSync(archiveDir)) {
+            const files = fs.readdirSync(archiveDir).filter(f => f.endsWith('.html'));
+            const fileList = files.map(f => `<li><a href="/privacy-policy/archive/${f}">${f}</a></li>`).join('');
+            
+            res.status(404).send(`
+                <h1>Archived Privacy Policies</h1>
+                <p>The requested archive was not found. Available archived versions:</p>
+                <ul>${fileList}</ul>
+                <p><a href="/privacy-policy">View Current Privacy Policy</a></p>
+            `);
+        } else {
+            res.status(404).send('No archived versions available');
+        }
+    }
+});
+
+// Store last known privacy policy content
+let lastPrivacyPolicyContent = '';
+
+// Initialize privacy policy monitoring
+function initializePolicyMonitoring() {
+    const policyPath = path.join(__dirname, 'privacy-policy.html');
+    if (fs.existsSync(policyPath)) {
+        lastPrivacyPolicyContent = fs.readFileSync(policyPath, 'utf8');
+    }
+    
+    // Watch for file changes
+    fs.watchFile(policyPath, async (curr, prev) => {
+        if (curr.mtime !== prev.mtime) {
+            await handlePolicyUpdate();
+        }
+    });
+}
+
+// Handle automatic policy update
+async function handlePolicyUpdate() {
+    const policyPath = path.join(__dirname, 'privacy-policy.html');
+    const currentContent = fs.readFileSync(policyPath, 'utf8');
+    
+    if (currentContent !== lastPrivacyPolicyContent && lastPrivacyPolicyContent) {
+        // Archive previous version
+        const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
+        const archiveFilename = `privacy-policy-${timestamp}.html`;
+        const archivePath = path.join(__dirname, 'archives', archiveFilename);
+        
+        // Create archives directory if it doesn't exist
+        const archiveDir = path.join(__dirname, 'archives');
+        if (!fs.existsSync(archiveDir)) {
+            fs.mkdirSync(archiveDir);
+        }
+        
+        // Save previous version to archive
+        fs.writeFileSync(archivePath, lastPrivacyPolicyContent);
+        console.log(`Privacy policy archived: ${archiveFilename}`);
+        
+        // Generate AI summary and notify users
+        try {
+            const orgId = await loadConditionalSecret('OPENAI_ORG_ID', 'OPENAI_ORG_ID');
+            const openai = new OpenAI({ 
+                apiKey: process.env.OPENAI_API_KEY,
+                organization: orgId
+            });
+            
+            const prompt = `Compare these two privacy policy versions and summarize the key changes in 2-3 bullet points:\n\nOLD VERSION:\n${lastPrivacyPolicyContent}\n\nNEW VERSION:\n${currentContent}`;
+            
+            const completion = await openai.chat.completions.create({
+                model: 'gpt-3.5-turbo',
+                messages: [{ role: 'user', content: prompt }],
+                max_tokens: 200
+            });
+            
+            const changesSummary = completion.choices[0].message.content;
+            
+            // Send notifications to all users
+            const userEmails = users.filter(u => u.email).map(u => u.email);
+            let successCount = 0;
+            
+            for (const email of userEmails) {
+                try {
+                    const gmail = google.gmail({ version: 'v1', auth: oauth2Client });
+                    
+                    const emailContent = [
+                        `From: ${process.env.GMAIL_USER}`,
+                        `To: ${email}`,
+                        `Subject: Privacy Policy Update - Matt Powers`,
+                        '',
+                        `Dear User,`,
+                        '',
+                        `We have updated our Privacy Policy. Here's what changed:`,
+                        '',
+                        changesSummary,
+                        '',
+                        `Compare versions:`,
+                        `Previous version: https://yourdomain.com/privacy-policy/archive/${archiveFilename}`,
+                        `Current version: https://yourdomain.com/privacy-policy`,
+                        '',
+                        `Best regards,`,
+                        `Matt Powers Team`
+                    ].join('\n');
+                    
+                    const encodedEmail = Buffer.from(emailContent).toString('base64').replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+                    
+                    await gmail.users.messages.send({
+                        userId: 'me',
+                        requestBody: { raw: encodedEmail }
+                    });
+                    
+                    successCount++;
+                } catch (emailError) {
+                    console.error(`Failed to send to ${email}:`, emailError.message);
+                }
+            }
+            
+            console.log(`Privacy policy update notifications sent to ${successCount} users`);
+        } catch (error) {
+            console.error('Failed to generate summary or send notifications:', error.message);
+        }
+    }
+    
+    // Update stored content
+    lastPrivacyPolicyContent = currentContent;
+}
+
+// Direct Data Deletion Route
+app.post('/delete-my-data', express.json(), async (req, res) => {
+    const { email } = req.body;
+    if (!email) {
+        return res.status(400).json({ error: 'Email required' });
+    }
+    
+    const userIndex = users.findIndex(u => u.email === email);
+    if (userIndex !== -1) {
+        users.splice(userIndex, 1);
+        console.log(`User data deleted for email: ${email}`);
+        res.json({ success: true, message: 'Your data has been deleted successfully.' });
+    } else {
+        res.json({ success: true, message: 'No account found with that email address.' });
+    }
+});
+
+// Privacy Policy Change Detection
+app.post('/privacy-policy/detect-changes', express.json(), async (req, res) => {
+    const token = req.headers.authorization?.split(' ')[1];
+    if (!token) return res.status(401).json({ error: 'Access denied' });
+    
+    try {
+        const decoded = jwt.verify(token, 'secret');
+        const user = users.find(u => u.id === decoded.id);
+        if (!user || user.role !== 'admin') {
+            return res.status(403).json({ error: 'Admin access required' });
+        }
+        
+        // Read current privacy policy content
+        const currentContent = fs.readFileSync(path.join(__dirname, 'privacy-policy.html'), 'utf8');
+        
+        if (!lastPrivacyPolicyContent) {
+            lastPrivacyPolicyContent = currentContent;
+            return res.json({ success: true, message: 'Baseline privacy policy content saved' });
+        }
+        
+        if (currentContent === lastPrivacyPolicyContent) {
+            return res.json({ success: true, message: 'No changes detected in privacy policy' });
+        }
+        
+        // Generate AI summary of changes
+        const orgId = await loadConditionalSecret('OPENAI_ORG_ID', 'OPENAI_ORG_ID');
+        const openai = new OpenAI({ 
+            apiKey: process.env.OPENAI_API_KEY,
+            organization: orgId
+        });
+        
+        const prompt = `Compare these two privacy policy versions and summarize the key changes in 2-3 bullet points:\n\nOLD VERSION:\n${lastPrivacyPolicyContent}\n\nNEW VERSION:\n${currentContent}`;
+        
+        const completion = await openai.chat.completions.create({
+            model: 'gpt-3.5-turbo',
+            messages: [{ role: 'user', content: prompt }],
+            max_tokens: 200
+        });
+        
+        const changesSummary = completion.choices[0].message.content;
+        
+        // Archive previous version
+        const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
+        const archiveFilename = `privacy-policy-${timestamp}.html`;
+        const archivePath = path.join(__dirname, 'archives', archiveFilename);
+        
+        // Create archives directory if it doesn't exist
+        const archiveDir = path.join(__dirname, 'archives');
+        if (!fs.existsSync(archiveDir)) {
+            fs.mkdirSync(archiveDir);
+        }
+        
+        // Save previous version to archive
+        fs.writeFileSync(archivePath, lastPrivacyPolicyContent);
+        
+        // Send notifications to all users
+        const userEmails = users.filter(u => u.email).map(u => u.email);
+        let successCount = 0;
+        
+        for (const email of userEmails) {
+            try {
+                const gmail = google.gmail({ version: 'v1', auth: oauth2Client });
+                
+                const emailContent = [
+                    `From: ${process.env.GMAIL_USER}`,
+                    `To: ${email}`,
+                    `Subject: Privacy Policy Update - Matt Powers`,
+                    '',
+                    `Dear User,`,
+                    '',
+                    `We have updated our Privacy Policy. Here's what changed:`,
+                    '',
+                    changesSummary,
+                    '',
+                    `Compare versions:`,
+                    `Previous version: ${req.get('origin')}/privacy-policy/archive/${archiveFilename}`,
+                    `Current version: ${req.get('origin')}/privacy-policy`,
+                    '',
+                    `Best regards,`,
+                    `Matt Powers Team`
+                ].join('\n');
+                
+                const encodedEmail = Buffer.from(emailContent).toString('base64').replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+                
+                await gmail.users.messages.send({
+                    userId: 'me',
+                    requestBody: { raw: encodedEmail }
+                });
+                
+                successCount++;
+            } catch (emailError) {
+                console.error(`Failed to send to ${email}:`, emailError.message);
+            }
+        }
+        
+        // Update stored content
+        lastPrivacyPolicyContent = currentContent;
+        
+        res.json({ 
+            success: true, 
+            message: `Privacy policy changes detected and notifications sent to ${successCount} users` 
+        });
+    } catch (error) {
+        console.error('Change detection error:', error.message);
+        res.status(500).json({ error: 'Failed to detect changes' });
+    }
+});
+
 // Root route redirects to login or serves main page for guests
 app.get('/', (req, res) => {
     const isGuest = req.headers['x-user-type'] === 'guest' || req.query.guest === 'true';
@@ -584,6 +859,7 @@ app.get('*', (req, res) => {
 if (process.env.NODE_ENV !== 'test') {
     loadPermanentSecrets().then(() => {
         initializePassport();
+        initializePolicyMonitoring();
         
         // Try HTTPS first, fallback to HTTP
         try {

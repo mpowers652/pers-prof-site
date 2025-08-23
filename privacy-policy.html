@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Privacy Policy - Matt Powers</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <header>
+        <nav>
+            <h1><a href="/">Matt Powers</a></h1>
+        </nav>
+    </header>
+
+    <main>
+        <section>
+            <h1>Privacy Policy</h1>
+            <p><strong>Last Updated:</strong> Aug 22, 2025</p>
+
+            <h2>1. Information We Collect</h2>
+            <h3>Personal Information</h3>
+            <ul>
+                <li>Name and email address (when you register or contact us)</li>
+                <li>Profile information from Google/Facebook OAuth (name, email, profile photo)</li>
+                <li>User-generated content (stories, calculations, contact messages)</li>
+            </ul>
+
+            <h3>Technical Information</h3>
+            <ul>
+                <li>IP address and browser information</li>
+                <li>Usage data and analytics</li>
+                <li>Cookies and local storage data</li>
+            </ul>
+
+            <h2>2. How We Use Your Information</h2>
+            <ul>
+                <li>Provide and improve our services</li>
+                <li>Authenticate users and manage accounts</li>
+                <li>Generate AI-powered content (stories)</li>
+                <li>Send notifications and respond to inquiries</li>
+                <li>Display personalized content and advertisements</li>
+            </ul>
+
+            <h2>3. Information Sharing</h2>
+            <p>We share information with:</p>
+            <ul>
+                <li><strong>Service Providers:</strong> Google Cloud, OpenAI, Twilio, AdSense</li>
+                <li><strong>Legal Requirements:</strong> When required by law or to protect rights</li>
+                <li><strong>Business Transfers:</strong> In case of merger or acquisition</li>
+            </ul>
+            <p>We do not sell personal information to third parties.</p>
+
+            <h2>4. Third-Party Services</h2>
+            <ul>
+                <li><strong>Google OAuth:</strong> Authentication and profile data</li>
+                <li><strong>Facebook OAuth:</strong> Authentication and profile data</li>
+                <li><strong>OpenAI:</strong> AI content generation</li>
+                <li><strong>Google AdSense:</strong> Advertising services</li>
+                <li><strong>Twilio:</strong> SMS notifications</li>
+            </ul>
+
+            <h2>5. Data Security</h2>
+            <p>We implement security measures including:</p>
+            <ul>
+                <li>Encrypted data transmission (HTTPS)</li>
+                <li>Secure cloud storage (Google Cloud)</li>
+                <li>Access controls and authentication</li>
+                <li>Regular security updates</li>
+            </ul>
+
+            <h2>6. Your Rights</h2>
+            <p>You have the right to:</p>
+            <ul>
+                <li>Access your personal information</li>
+                <li>Correct inaccurate data</li>
+                <li>Delete your account and data</li>
+                <li>Opt-out of marketing communications</li>
+                <li>Data portability</li>
+            </ul>
+            
+            <h3>Data Deletion Process</h3>
+            <p>To delete your data, select "Delete My Data" from the contact form subject options. Your account and all associated data will be automatically removed from our systems immediately upon submission.</p>
+
+            <h2>7. Cookies and Tracking</h2>
+            <p>We use cookies for:</p>
+            <ul>
+                <li>Authentication and session management</li>
+                <li>User preferences and settings</li>
+                <li>Analytics and performance monitoring</li>
+                <li>Advertising personalization</li>
+            </ul>
+
+            <h2>8. Children's Privacy</h2>
+            <p>Our services are not intended for children under 13. We do not knowingly collect personal information from children under 13.</p>
+
+            <h2>9. International Data Transfers</h2>
+            <p>Your data may be processed in countries outside your residence, including the United States, where our service providers operate.</p>
+
+            <h2>10. Data Retention</h2>
+            <p>We retain personal information as long as necessary to provide services or as required by law. Account data is deleted upon request.</p>
+
+            <h2>11. Changes to Privacy Policy</h2>
+            <p>We may update this policy periodically. Changes will be posted on this page with an updated date. All registered users will be automatically notified via email when significant changes are made to this privacy policy.</p>
+            
+            <div class="policy-update-section">
+                <h3>Update Privacy Policy</h3>
+                <p><em>Admin only: Changes will be automatically detected and users notified.</em></p>
+                <button id="detectChangesBtn" class="btn">Check for Changes & Notify Users</button>
+                <div id="updateResult"></div>
+            </div>
+
+            <h2>12. Contact Information</h2>
+            <p>For privacy-related questions or requests:</p>
+            <ul>
+                <li>Email: mpowersprogrammer@gmail.com</li>
+                <li>Contact Form: <a href="/contact">Contact Us</a></li>
+            </ul>
+
+            <h2>13. Legal Basis (GDPR)</h2>
+            <p>We process personal data based on:</p>
+            <ul>
+                <li>Consent (for marketing and optional features)</li>
+                <li>Contract performance (for service delivery)</li>
+                <li>Legitimate interests (for analytics and security)</li>
+                <li>Legal obligations (for compliance)</li>
+            </ul>
+
+            <h2>14. California Privacy Rights (CCPA)</h2>
+            <p>California residents have additional rights including the right to know, delete, and opt-out of the sale of personal information.</p>
+        </section>
+    </main>
+    
+    <script>
+        document.getElementById('detectChangesBtn').addEventListener('click', async () => {
+            const token = localStorage.getItem('token');
+            if (!token) {
+                alert('Please log in to detect changes');
+                return;
+            }
+            
+            try {
+                const response = await fetch('/privacy-policy/detect-changes', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    }
+                });
+                
+                const data = await response.json();
+                document.getElementById('updateResult').innerHTML = 
+                    data.success ? 
+                    `<p style="color: green;">${data.message}</p>` :
+                    `<p style="color: red;">${data.message}</p>`;
+            } catch (error) {
+                document.getElementById('updateResult').innerHTML = 
+                    '<p style="color: red;">Error detecting changes</p>';
+            }
+        });
+    </script>
+</body>
+</html>
