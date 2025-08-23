@@ -563,7 +563,9 @@ app.get('/contact', (req, res) => {
 // Root route redirects to login or serves main page for guests
 app.get('/', (req, res) => {
     const isGuest = req.headers['x-user-type'] === 'guest' || req.query.guest === 'true';
-    if (isGuest) {
+    const hasToken = req.query.token;
+    
+    if (isGuest || hasToken) {
         res.sendFile(path.join(__dirname, 'index.html'));
     } else {
         res.redirect('/login');

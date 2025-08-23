@@ -4,6 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-7284206181717863" crossorigin="anonymous"></script>
+    
+
     <title>Login - Matt Powers</title>
     <link rel="stylesheet" href="style.css">
 </head>
@@ -52,7 +54,25 @@
             </div>
         </section>
     </main>
+        <script>
+            window.fbAsyncInit = function() {
+                FB.init({
+                    appId      : process.env.FACEBOOK_APP_ID,
+                    cookie     : true,
+                    xfbml      : true,
+                    version    : '22.0'
+                });
+                FB.AppEvents.logPageView();
+            };
 
+            (function(d, s, id){
+                var js, fjs = d.getElementsByTagName(s)[0];
+                if (d.getElementById(id)) {return;}
+                js = d.createElement(s); js.id = id;
+                js.src = "https://connect.facebook.net/en_US/sdk.js";
+                fjs.parentNode.insertBefore(js, fjs);
+            }(document, 'script', 'facebook-jssdk'));
+    </script>
     <script>
         document.getElementById('loginForm').addEventListener('submit', async (e) => {
             e.preventDefault();
@@ -79,6 +99,7 @@
         }
         
         function loginWithFacebook() {
+            
             window.location.href = '/auth/facebook';
         }
         
