@@ -122,7 +122,7 @@ function initializePassport() {
         passport.use(new GoogleStrategy({
             clientID: process.env.GMAIL_CLIENT_ID,
             clientSecret: process.env.GMAIL_CLIENT_SECRET,
-            callbackURL: process.env.NODE_ENV === 'production' ? 'https://yourdomain.com/auth/google/callback' : '/auth/google/callback'
+            callbackURL: process.env.NODE_ENV === 'production' ? 'https://matt-resume.click/auth/google/callback' : '/auth/google/callback'
         }, (accessToken, refreshToken, profile, done) => {
             let user = users.find(u => u.googleId === profile.id);
             if (!user) {
@@ -681,8 +681,8 @@ async function handlePolicyUpdate() {
                         changesSummary,
                         '',
                         `Compare versions:`,
-                        `Previous version: https://yourdomain.com/privacy-policy/archive/${archiveFilename}`,
-                        `Current version: https://yourdomain.com/privacy-policy`,
+                        `Previous version: https://matt-resume.click/privacy-policy/archive/${archiveFilename}`,
+                        `Current version: https://matt-resume.click/privacy-policy`,
                         '',
                         `Best regards,`,
                         `Matt Powers Team`
