@@ -525,7 +525,8 @@ app.get('/auth/google', (req, res, next) => {
 
 app.get('/auth/google/callback', passport.authenticate('google', { failureRedirect: '/login' }), (req, res) => {
     const token = jwt.sign({ id: req.user.id }, 'secret', { expiresIn: '10m' });
-    res.redirect(`/?token=${token}`);
+    req.session.authToken = token;
+    res.redirect('/');
 });
 
 app.get('/auth/facebook', (req, res, next) => {
@@ -839,9 +840,9 @@ app.post('/privacy-policy/detect-changes', express.json(), async (req, res) => {
 // Root route redirects to login or serves main page for guests
 app.get('/', (req, res) => {
     const isGuest = req.headers['x-user-type'] === 'guest' || req.query.guest === 'true';
-    const hasToken = req.query.token;
+    const hasSessionToken = req.session.authToken;
     
-    if (isGuest || hasToken) {
+    if (isGuest || hasSessionToken) {
         res.sendFile(path.join(__dirname, 'index.html'));
     } else {
         res.redirect('/login');
