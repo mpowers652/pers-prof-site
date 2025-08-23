@@ -30,6 +30,7 @@ async function loadPermanentSecrets() {
     process.env.ADSENSE_SLOT_ID = await getSecret('ADSENSE_SLOT_ID') || process.env.ADSENSE_SLOT_ID;
     process.env.FACEBOOK_APP_ID = await getSecret('FACEBOOK_APP_ID') || process.env.FACEBOOK_APP_ID;
     process.env.FACEBOOK_APP_SECRET = await getSecret('FACEBOOK_APP_SECRET') || process.env.FACEBOOK_APP_SECRET;
+    process.env.NODE_ENV = await getSecret('NODE_ENV') || process.env.NODE_ENV;
 }
 
 // Load conditional secrets on-demand
@@ -121,7 +122,7 @@ function initializePassport() {
         passport.use(new GoogleStrategy({
             clientID: process.env.GMAIL_CLIENT_ID,
             clientSecret: process.env.GMAIL_CLIENT_SECRET,
-            callbackURL: '/auth/google/callback'
+            callbackURL: process.env.NODE_ENV === 'production' ? 'https://yourdomain.com/auth/google/callback' : '/auth/google/callback'
         }, (accessToken, refreshToken, profile, done) => {
             let user = users.find(u => u.googleId === profile.id);
             if (!user) {
@@ -145,7 +146,7 @@ function initializePassport() {
         passport.use(new FacebookStrategy({
             clientID: process.env.FACEBOOK_APP_ID,
             clientSecret: process.env.FACEBOOK_APP_SECRET,
-            callbackURL: '/auth/facebook/callback',
+            callbackURL: process.env.NODE_ENV === 'production' ? 'https://matt-resume.click/auth/facebook/callback' : 'https://localhost:3000/auth/facebook/callback',
             profileFields: ['id', 'displayName', 'photos', 'email']
         }, (accessToken, refreshToken, profile, done) => {
             let user = users.find(u => u.facebookId === profile.id);
