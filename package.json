@@ -4,7 +4,8 @@
   "description": "A minimal website foundation for hosting and accessing multiple services",
   "main": "server.js",
   "scripts": {
-    "start": "node server.js",
+    "start": "node start.js",
+    "dev": "node server.js",
     "test": "jest",
     "deploy": "gcloud app deploy"
   },

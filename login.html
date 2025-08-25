@@ -104,7 +104,9 @@
         }
         
         function loginAsGuest() {
+            console.log('Setting userType to guest');
             localStorage.setItem('userType', 'guest');
+            console.log('UserType saved:', localStorage.getItem('userType'));
             window.location.href = '/';
         }
     </script>

@@ -46,6 +46,7 @@ describe('Authentication', () => {
             .post('/auth/login')
             .send({
                 username: 'logintest',
+                email: 'login@test.com',
                 password: 'password123'
             });
         expect(response.status).toBe(200);

@@ -6,7 +6,7 @@
     <meta name="google-adsense-account" content="ca-pub-7284206181717863">
     <title>Services Hub</title>
     <link rel="stylesheet" href="style.css">
-    <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-7284206181717863" crossorigin="anonymous"></script>
+
 
 </head>
 <body>
@@ -47,38 +47,36 @@
                 <button class="capture-btn" id="cancelBtn" class="btn">Cancel</button>
             </div>
             <script>
-                (async function() {
+                // Wait for DOM to be ready
+                document.addEventListener('DOMContentLoaded', async function() {
                     const token = localStorage.getItem('token');
+                    
                     if (token) {
                         try {
-                            const response = await fetch('/auth/verify');
-                            const data = await response.json();
-                            if (data.user?.username) {
-                                document.getElementById('profilePlaceholder').textContent = data.user.username;
+                            const response = await fetch('/auth/verify', {
+                                headers: { 'Authorization': `Bearer ${token}` }
+                            });
+                            
+                            if (response.ok) {
+                                const data = await response.json();
+                                if (data.user?.username) {
+                                    const usernameSpan = document.getElementById('usernameSpan');
+                                    if (usernameSpan) {
+                                        usernameSpan.textContent = data.user.username;
+                                    }
+                                }
                             }
                         } catch (error) {
-                            console.log('Could not load username');
-                            console.error('Error fetching Google profile photo:', error);
+                            console.error('Auth verification failed:', error);
                         }
                     }
-                })();
+                });
             </script>
-            <h2>Welcome <span id="profilePlaceholder"></span></h2>
+            <h2>Welcome <span id="usernameSpan">Guest</span></h2>
             <p>The place to learn all about me as a developer</p>
         </section>
 
-        <!-- AdSense Ad Unit -->
-        <div class="ad-container">
-            <ins class="adsbygoogle"
-                 data-ad-client="ca-pub-7284206181717863"
-                 data-ad-slot="your_adsense_slot_id"
-                 data-ad-format="auto"
-                 data-full-width-responsive="true"></ins>
-            <script>
-                 var adsbygoogle = window.adsbygoogle || [];
-                 adsbygoogle.push({});
-            </script>
-        </div>
+
 
         <section id="services">
             <h2>Available Services</h2>

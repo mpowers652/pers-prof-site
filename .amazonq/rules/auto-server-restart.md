@@ -1,0 +1,1 @@
+If any changes to the system require test server restart, automatically do so.

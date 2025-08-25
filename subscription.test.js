@@ -5,7 +5,10 @@ const jwt = require('jsonwebtoken');
 describe('Subscription Access', () => {
     let regularToken, adminToken;
     
-    beforeAll(() => {
+    beforeAll(async () => {
+        // Wait for admin user creation
+        await new Promise(resolve => setTimeout(resolve, 100));
+        
         // Regular user without full subscription
         regularToken = jwt.sign({ id: 999 }, 'secret', { expiresIn: '1h' });
         // Admin user with full subscription

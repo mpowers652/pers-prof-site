@@ -54,7 +54,7 @@
             
             const data = await response.json();
             if (data.success) {
-                alert('Registration successful! Please login.');
+                alert(data.message);
                 window.location.href = '/login';
             } else {
                 alert(data.message);

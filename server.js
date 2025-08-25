@@ -30,7 +30,6 @@ async function loadPermanentSecrets() {
     process.env.ADSENSE_SLOT_ID = await getSecret('ADSENSE_SLOT_ID') || process.env.ADSENSE_SLOT_ID;
     process.env.FACEBOOK_APP_ID = await getSecret('FACEBOOK_APP_ID') || process.env.FACEBOOK_APP_ID;
     process.env.FACEBOOK_APP_SECRET = await getSecret('FACEBOOK_APP_SECRET') || process.env.FACEBOOK_APP_SECRET;
-    process.env.NODE_ENV = await getSecret('NODE_ENV') || process.env.NODE_ENV;
 }
 
 // Load conditional secrets on-demand
@@ -79,14 +78,23 @@ app.use((req, res, next) => {
     next();
 });
 
-// Serve static files
-app.use(express.static('.'));
-app.use(require('express-session')({ secret: 'secret', resave: false, saveUninitialized: false }));
+// Parse URL-encoded bodies and JSON
+app.use(express.urlencoded({ extended: true }));
+app.use(express.json());
+app.use(require('express-session')({ 
+    secret: 'secret', 
+    resave: false, 
+    saveUninitialized: true,
+    cookie: { secure: false, maxAge: 600000 }
+}));
 app.use(passport.initialize());
 app.use(passport.session());
 
 // In-memory user storage (use database in production)
 const users = [];
+
+// Admin configuration
+const ADMIN_EMAIL = process.env.ADMIN_EMAIL || 'cartoonsredbob@gmail.com';
 
 // Create admin user
 const adminPassword = Math.random().toString(36).slice(-12);
@@ -94,12 +102,12 @@ bcrypt.hash(adminPassword, 10).then(hashedPassword => {
     users.push({
         id: 1,
         username: 'admin',
-        email: 'admin@localhost',
+        email: ADMIN_EMAIL,
         password: hashedPassword,
         role: 'admin',
         subscription: 'full'
     });
-    console.log(`Admin user created - Username: admin, Password: ${adminPassword}`);
+    console.log(`Admin user created - Username: admin, Email: ${ADMIN_EMAIL}, Password: ${adminPassword}`);
 });
 
 // Create premium user example
@@ -122,11 +130,12 @@ function initializePassport() {
         passport.use(new GoogleStrategy({
             clientID: process.env.GMAIL_CLIENT_ID,
             clientSecret: process.env.GMAIL_CLIENT_SECRET,
-            callbackURL: process.env.NODE_ENV === 'production' ? 'https://matt-resume.click/auth/google/callback' : '/auth/google/callback'
+            callbackURL: process.env.NODE_ENV === 'production' ? 'https://matt-resume.click/auth/google/callback' : 'https://localhost:3000/auth/google/callback'
         }, (accessToken, refreshToken, profile, done) => {
             let user = users.find(u => u.googleId === profile.id);
             if (!user) {
-                const isAdmin = profile.displayName === 'HorrorFreak1408' && profile.emails[0].value === 'cartoonsredbob@gmail.com';
+                const isAdmin = profile.emails[0].value === ADMIN_EMAIL;
+                console.log(`Google OAuth: ${profile.emails[0].value} vs ${ADMIN_EMAIL}, isAdmin: ${isAdmin}`);
                 user = { 
                     id: users.length + 1, 
                     googleId: profile.id, 
@@ -137,6 +146,7 @@ function initializePassport() {
                     subscription: isAdmin ? 'full' : 'basic'
                 };
                 users.push(user);
+                console.log(`Created Google user: role=${user.role}, subscription=${user.subscription}`);
             }
             return done(null, user);
         }));
@@ -173,9 +183,9 @@ passport.deserializeUser((id, done) => {
     done(null, user);
 });
 
-// Authentication middleware
+// Authentication middleware with auto-refresh
 function requireAuth(req, res, next) {
-    const token = req.headers.authorization?.split(' ')[1] || req.query.token;
+    const token = req.headers.authorization?.split(' ')[1];
     const isGuest = req.headers['x-user-type'] === 'guest' || req.query.guest === 'true';
     
     if (token || isGuest || req.path === '/login' || req.path === '/register' || req.path.startsWith('/auth/')) {
@@ -207,14 +217,18 @@ app.get('/fft-visualizer', (req, res) => {
 
 // Story Generator route (requires full subscription)
 app.get('/story-generator', (req, res) => {
-    const token = req.headers.authorization?.split(' ')[1] || req.query.token;
+    const token = req.headers.authorization?.split(' ')[1];
     if (!token) return res.status(401).send('Access denied. Full subscription required.');
     
     try {
         const decoded = jwt.verify(token, 'secret');
         const user = users.find(u => u.id === decoded.id);
-        if (!user || user.subscription !== 'full') {
+        if (!user || (user.subscription !== 'full' && user.role !== 'admin')) {
             return res.status(403).send('Access denied. Full subscription required.');
+        }
+        // Check if user has OpenAI key
+        if (!user.openaiKey) {
+            return res.redirect('/request-api-key');
         }
         res.sendFile(path.join(__dirname, 'story-generator.html'));
     } catch {
@@ -229,8 +243,12 @@ app.post('/story/generate', express.json(), async (req, res) => {
     try {
         const decoded = jwt.verify(token, 'secret');
         const user = users.find(u => u.id === decoded.id);
-        if (!user || user.subscription !== 'full') {
+        if (!user || (user.subscription !== 'full' && user.role !== 'admin')) {
             return res.status(403).json({ error: 'Full subscription required' });
+        }
+        
+        if (!user.openaiKey) {
+            return res.status(400).json({ error: 'AI_KEY_MISSING', message: 'OpenAI key required for AI features' });
         }
         
         const { adjective, wordCount, subject } = req.body;
@@ -476,30 +494,44 @@ app.post('/auth/register', express.json(), async (req, res) => {
     }
     
     try {
-        // Generate OpenAI API key for user
-        const orgId = await loadConditionalSecret('OPENAI_ORG_ID', 'OPENAI_ORG_ID');
-        const openai = new OpenAI({ 
-            apiKey: process.env.OPENAI_API_KEY,
-            organization: orgId
-        });
-        
-        const apiKey = await openai.apiKeys.create({
-            name: `User-${username}-${Date.now()}`
-        });
-        
         const hashedPassword = await bcrypt.hash(password, 10);
+        let openaiKey = null;
+        
+        // Generate OpenAI key if master API key is available
+        const masterApiKey = await loadConditionalSecret('OPENAI_MASTER_API_KEY', 'OPENAI_MASTER_API_KEY');
+        const orgId = await loadConditionalSecret('OPENAI_ORG_ID', 'OPENAI_ORG_ID');
+        if (masterApiKey && orgId) {
+            try {
+                const openai = new OpenAI({ 
+                    apiKey: masterApiKey,
+                    organization: orgId 
+                });
+                const apiKey = await openai.apiKeys.create({
+                    name: `User-${username}-${Date.now()}`
+                });
+                openaiKey = apiKey.key;
+            } catch (keyError) {
+                console.log('OpenAI key generation skipped:', keyError.message);
+            }
+        }
+        
         const user = { 
             id: users.length + 1, 
             username, 
             email, 
-            password: hashedPassword, 
-            openaiKey: apiKey.key
+            password: hashedPassword,
+            role: 'user',
+            subscription: 'basic',
+            openaiKey
         };
         users.push(user);
         
-        res.json({ success: true, message: 'Registration successful' });
+        const message = openaiKey ? 
+            'Registration successful' : 
+            'Registration successful. Note: AI features are currently unavailable due to a technical issue.';
+        res.json({ success: true, message, aiFeatures: !!openaiKey });
     } catch (error) {
-        console.error('OpenAI key generation failed:', error.message);
+        console.error('Registration failed:', error.message);
         res.json({ success: false, message: 'Registration failed' });
     }
 });
@@ -512,7 +544,7 @@ app.post('/auth/login', express.json(), async (req, res) => {
         return res.json({ success: false, message: 'Invalid credentials' });
     }
     
-    const token = jwt.sign({ id: user.id }, 'secret', { expiresIn: '10m' });
+    const token = jwt.sign({ id: user.id }, 'secret', { expiresIn: '1h' });
     res.json({ success: true, token });
 });
 
@@ -524,9 +556,9 @@ app.get('/auth/google', (req, res, next) => {
 });
 
 app.get('/auth/google/callback', passport.authenticate('google', { failureRedirect: '/login' }), (req, res) => {
-    const token = jwt.sign({ id: req.user.id }, 'secret', { expiresIn: '10m' });
-    req.session.authToken = token;
-    res.redirect('/');
+    const token = jwt.sign({ id: req.user.id }, 'secret', { expiresIn: '1h' });
+    console.log('Google OAuth success, token generated:', token.substring(0, 20) + '...');
+    res.redirect('/login?success=true');
 });
 
 app.get('/auth/facebook', (req, res, next) => {
@@ -537,8 +569,8 @@ app.get('/auth/facebook', (req, res, next) => {
 });
 
 app.get('/auth/facebook/callback', passport.authenticate('facebook', { failureRedirect: '/login' }), (req, res) => {
-    const token = jwt.sign({ id: req.user.id }, 'secret', { expiresIn: '10m' });
-    res.redirect(`/?token=${token}`);
+    const token = jwt.sign({ id: req.user.id }, 'secret', { expiresIn: '1h' });
+    res.redirect('/login?success=true');
 });
 
 app.get('/auth/verify', (req, res) => {
@@ -554,12 +586,81 @@ app.get('/auth/verify', (req, res) => {
             user: { 
                 id: user.id, 
                 username: user.username, 
+                email: user.email,
+                role: user.role,
                 subscription: user.subscription,
                 hideAds: user.subscription === 'premium' || user.subscription === 'full',
                 googlePhoto: user.googlePhoto,
-                facebookPhoto: user.facebookPhoto
+                facebookPhoto: user.facebookPhoto,
+                openaiKey: user.openaiKey
             } 
         });
+    } catch {
+        res.status(401).json({ error: 'Invalid token' });
+    }
+});
+
+app.post('/auth/logout', (req, res) => {
+    res.json({ success: true, message: 'Logged out successfully' });
+});
+
+app.get('/request-api-key', (req, res) => {
+    res.sendFile(path.join(__dirname, 'request-api-key.html'));
+});
+
+app.post('/auth/request-api-key', express.json(), async (req, res) => {
+    const token = req.headers.authorization?.split(' ')[1];
+    if (!token) return res.status(401).json({ error: 'Access denied' });
+    
+    try {
+        const decoded = jwt.verify(token, 'secret');
+        const user = users.find(u => u.id === decoded.id);
+        if (!user) return res.status(404).json({ error: 'User not found' });
+        
+        // Try to generate OpenAI key
+        const masterApiKey = await loadConditionalSecret('OPENAI_MASTER_API_KEY', 'OPENAI_MASTER_API_KEY');
+        const orgId = await loadConditionalSecret('OPENAI_ORG_ID', 'OPENAI_ORG_ID');
+        
+        if (masterApiKey && orgId) {
+            try {
+                const openai = new OpenAI({ 
+                    apiKey: masterApiKey,
+                    organization: orgId 
+                });
+                const apiKey = await openai.apiKeys.create({
+                    name: `User-${user.username}-${Date.now()}`
+                });
+                user.openaiKey = apiKey.key;
+                res.json({ success: true, message: 'AI access granted! You can now use AI features.' });
+            } catch (keyError) {
+                res.json({ success: false, message: 'AI access request failed. Please try again later.' });
+            }
+        } else {
+            res.json({ success: false, message: 'AI services are currently unavailable. Please contact support.' });
+        }
+    } catch {
+        res.status(401).json({ error: 'Invalid token' });
+    }
+});
+
+app.post('/auth/refresh', (req, res) => {
+    const token = req.headers.authorization?.split(' ')[1];
+    if (!token) return res.status(401).json({ error: 'No token' });
+    
+    try {
+        const decoded = jwt.verify(token, 'secret', { ignoreExpiration: true });
+        const user = users.find(u => u.id === decoded.id);
+        if (!user) return res.status(404).json({ error: 'User not found' });
+        
+        // Check if token is within refresh window (allow refresh up to 24h after expiration)
+        const now = Math.floor(Date.now() / 1000);
+        const refreshWindow = 24 * 60 * 60; // 24 hours
+        if (decoded.exp && (now - decoded.exp) > refreshWindow) {
+            return res.status(401).json({ error: 'Token too old to refresh' });
+        }
+        
+        const newToken = jwt.sign({ id: user.id }, 'secret', { expiresIn: '1h' });
+        res.json({ token: newToken });
     } catch {
         res.status(401).json({ error: 'Invalid token' });
     }
@@ -729,6 +830,30 @@ app.post('/delete-my-data', express.json(), async (req, res) => {
     }
 });
 
+// Admin Configuration
+app.post('/admin/set-email', express.json(), (req, res) => {
+    const token = req.headers.authorization?.split(' ')[1];
+    if (!token) return res.status(401).json({ error: 'Access denied' });
+    
+    try {
+        const decoded = jwt.verify(token, 'secret');
+        const user = users.find(u => u.id === decoded.id);
+        if (!user || user.role !== 'admin') {
+            return res.status(403).json({ error: 'Admin access required' });
+        }
+        
+        const { email } = req.body;
+        if (!email) {
+            return res.status(400).json({ error: 'Email required' });
+        }
+        
+        process.env.ADMIN_EMAIL = email;
+        res.json({ success: true, message: `Admin email set to ${email}` });
+    } catch {
+        res.status(401).json({ error: 'Invalid token' });
+    }
+});
+
 // Privacy Policy Change Detection
 app.post('/privacy-policy/detect-changes', express.json(), async (req, res) => {
     const token = req.headers.authorization?.split(' ')[1];
@@ -837,34 +962,31 @@ app.post('/privacy-policy/detect-changes', express.json(), async (req, res) => {
     }
 });
 
-// Root route redirects to login or serves main page for guests
+// Root route serves main page
 app.get('/', (req, res) => {
+    const authToken = req.headers.authorization?.split(' ')[1];
     const isGuest = req.headers['x-user-type'] === 'guest' || req.query.guest === 'true';
-    const hasSessionToken = req.session.authToken;
     
-    if (isGuest || hasSessionToken) {
-        let html = fs.readFileSync(path.join(__dirname, 'index.html'), 'utf8');
-        
-        // Inject session token into client-side localStorage
-        if (hasSessionToken) {
-            html = html.replace('</body>', `
-                <script>
-                    localStorage.setItem('token', '${hasSessionToken}');
-                    localStorage.removeItem('userType');
-                </script>
-            </body>`);
-        }
-        
-        res.send(html);
-    } else {
-        res.redirect('/login');
+    // Check if user is authenticated or guest
+    const isAuthenticated = authToken || isGuest;
+    
+    if (!isAuthenticated) {
+        return res.redirect('/login');
     }
+    
+    const html = fs.readFileSync(path.join(__dirname, 'index.html'), 'utf8');
+    res.send(html);
 });
 
-// Apply auth middleware to all routes except auth routes
-app.use(requireAuth);
+// Serve static files (exclude auth paths)
+app.use((req, res, next) => {
+    if (req.path.startsWith('/auth/')) {
+        return next();
+    }
+    express.static('.', { index: false })(req, res, next);
+});
 
-// Redirect to login for all other routes
+// Redirect to login for all other GET routes (not POST routes)
 app.get('*', (req, res) => {
     res.redirect('/login');
 });
@@ -874,21 +996,34 @@ if (process.env.NODE_ENV !== 'test') {
         initializePassport();
         initializePolicyMonitoring();
         
-        // Try HTTPS first, fallback to HTTP
-        try {
-            const options = {
-                key: fs.readFileSync('server.key'),
-                cert: fs.readFileSync('server.cert')
-            };
-            https.createServer(options, app).listen(PORT, () => {
-                console.log(`HTTPS Server running on https://localhost:${PORT}`);
-            });
-        } catch (error) {
-            console.log('HTTPS certificates not found, starting HTTP server');
-            app.listen(PORT, () => {
-                console.log(`HTTP Server running on http://localhost:${PORT}`);
-            });
-        }
+        const startServer = (port) => {
+            try {
+                const options = {
+                    key: fs.readFileSync('server.key'),
+                    cert: fs.readFileSync('server.cert')
+                };
+                https.createServer(options, app).listen(port, () => {
+                    console.log(`HTTPS Server running on https://localhost:${port}`);
+                }).on('error', (err) => {
+                    if (err.code === 'EADDRINUSE') {
+                        console.log(`Port ${port} in use, trying ${port + 1}`);
+                        startServer(port + 1);
+                    }
+                });
+            } catch (error) {
+                console.log('HTTPS certificates not found, starting HTTP server');
+                app.listen(port, () => {
+                    console.log(`HTTP Server running on http://localhost:${port}`);
+                }).on('error', (err) => {
+                    if (err.code === 'EADDRINUSE') {
+                        console.log(`Port ${port} in use, trying ${port + 1}`);
+                        startServer(port + 1);
+                    }
+                });
+            }
+        };
+        
+        startServer(PORT);
     }).catch(console.error);
 }
 
