@@ -88,6 +88,7 @@
             subjectSelect.innerHTML = '<option value="">Select subject...</option>';
             const subjects = adjective === 'scary' ? scarySubjects : otherSubjects;
             
+            subjectSelect.innerHTML += '<option value="random">Random Choice</option>';
             subjects.forEach(subject => {
                 subjectSelect.innerHTML += `<option value="${subject}">${subject}</option>`;
             });
@@ -112,6 +113,10 @@
             if (adjective === 'custom') adjective = document.getElementById('customAdjective').value;
             if (wordCount === 'custom') wordCount = document.getElementById('customWordCount').value;
             if (subject === 'custom') subject = document.getElementById('customSubject').value;
+            if (subject === 'random') {
+                const subjects = adjective === 'scary' ? scarySubjects : otherSubjects;
+                subject = subjects[Math.floor(Math.random() * subjects.length)];
+            }
             
             if (!adjective || !wordCount || !subject) {
                 alert('Please fill in all fields');
