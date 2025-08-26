@@ -3,8 +3,12 @@ function isTokenExpired(token) {
     if (!token) return true;
     try {
         const payload = JSON.parse(atob(token.split('.')[1]));
-        return Date.now() >= payload.exp * 1000;
-    } catch {
+        const now = Math.floor(Date.now() / 1000);
+        console.log('Token validation - now:', now, 'exp:', payload.exp, 'iat:', payload.iat);
+        console.log('Checks - expired:', now >= payload.exp, 'future iat:', payload.iat && now < payload.iat);
+        return now >= payload.exp || (payload.iat && now < payload.iat);
+    } catch (e) {
+        console.log('Token parsing error:', e);
         return true;
     }
 }
@@ -39,7 +43,7 @@ function isValidJWT(token) {
 
 // Refresh token if needed
 async function refreshTokenIfNeeded() {
-    const token = localStorage.getItem('token');
+    const token = getToken();
     if (!token || isTokenExpired(token)) return false;
     
     if (isTokenExpiringSoon(token)) {
@@ -64,12 +68,28 @@ async function refreshTokenIfNeeded() {
     return false;
 }
 
+// Get token from cookies
+function getCookieToken() {
+    const cookies = document.cookie.split(';');
+    for (let cookie of cookies) {
+        const [name, value] = cookie.trim().split('=');
+        if (name === 'token') return value;
+    }
+    return null;
+}
+
+// Get token from localStorage or cookies
+function getToken() {
+    return localStorage.getItem('token') || getCookieToken();
+}
+
 // Clear expired token
 function clearExpiredToken() {
-    const token = localStorage.getItem('token');
+    const token = getToken();
     if (token && isTokenExpired(token)) {
         localStorage.removeItem('token');
         localStorage.removeItem('userType');
+        document.cookie = 'token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;';
         return true;
     }
     return false;
@@ -89,7 +109,7 @@ function startTokenRefreshTimer() {
     if (refreshInterval) clearInterval(refreshInterval);
     
     refreshInterval = setInterval(async () => {
-        const token = localStorage.getItem('token');
+        const token = getToken();
         if (!token) return;
         
         // Only refresh if user was active in last 30 minutes
@@ -119,7 +139,7 @@ document.addEventListener('visibilitychange', async () => {
 });
 
 // Start refresh timer if token exists
-if (localStorage.getItem('token')) {
+if (getToken()) {
     startTokenRefreshTimer();
 }
 
@@ -127,7 +147,7 @@ if (localStorage.getItem('token')) {
 function setAuthHeaders() {
     clearExpiredToken();
     refreshTokenIfNeeded();
-    const token = localStorage.getItem('token');
+    const token = getToken();
     const userType = localStorage.getItem('userType');
     
     if (token && !isTokenExpired(token)) {
@@ -154,15 +174,15 @@ window.fetch = function(url, options = {}) {
     });
 };
 
-// Immediately clear expired tokens on script load
-clearExpiredToken();
+// Only clear expired tokens on explicit check
+// Removed automatic clearing on script load
 
 // Check auth on page load
-if (localStorage.getItem('token')) {
+if (getToken()) {
     startTokenRefreshTimer();
     refreshTokenIfNeeded();
 }
-if (!localStorage.getItem('token') && localStorage.getItem('userType') !== 'guest' && 
+if (!getToken() && localStorage.getItem('userType') !== 'guest' && 
     !window.location.pathname.includes('/login') && !window.location.pathname.includes('/register')) {
     window.location.href = '/login';
 }

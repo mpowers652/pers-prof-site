@@ -547,7 +547,7 @@ app.post('/auth/login', express.json(), async (req, res) => {
         return res.json({ success: false, message: 'Invalid credentials' });
     }
     
-    const token = jwt.sign({ id: user.id }, 'secret', { expiresIn: '1h' });
+    const token = jwt.sign({ id: user.id, iat: Math.floor(Date.now() / 1000) }, 'secret', { expiresIn: '1h' });
     res.json({ success: true, token });
 });
 
@@ -569,7 +569,7 @@ app.get('/auth/google/callback', (req, res, next) => {
             return res.redirect('/login');
         }
         
-        const token = jwt.sign({ id: req.user.id }, 'secret', { expiresIn: '1h' });
+        const token = jwt.sign({ id: req.user.id, iat: Math.floor(Date.now() / 1000) }, 'secret', { expiresIn: '1h' });
         console.log('Google OAuth success, token generated:', token.substring(0, 20) + '...');
         res.cookie('token', token, { httpOnly: true, secure: process.env.NODE_ENV === 'production', maxAge: 3600000 });
         res.redirect('/login?success=true');
@@ -594,7 +594,7 @@ app.get('/auth/facebook/callback', (req, res, next) => {
             return res.redirect('/login');
         }
         
-        const token = jwt.sign({ id: req.user.id }, 'secret', { expiresIn: '1h' });
+        const token = jwt.sign({ id: req.user.id, iat: Math.floor(Date.now() / 1000) }, 'secret', { expiresIn: '1h' });
         res.cookie('token', token, { httpOnly: true, secure: process.env.NODE_ENV === 'production', maxAge: 3600000 });
         res.redirect('/login?success=true');
     });
@@ -686,7 +686,7 @@ app.post('/auth/refresh', (req, res) => {
             return res.status(401).json({ error: 'Token too old to refresh' });
         }
         
-        const newToken = jwt.sign({ id: user.id }, 'secret', { expiresIn: '1h' });
+        const newToken = jwt.sign({ id: user.id, iat: Math.floor(Date.now() / 1000) }, 'secret', { expiresIn: '1h' });
         res.json({ token: newToken });
     } catch {
         res.status(401).json({ error: 'Invalid token' });
