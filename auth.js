@@ -21,6 +21,22 @@ function isTokenExpiringSoon(token) {
     }
 }
 
+// Verify token is a valid JWT format
+function isValidJWT(token) {
+    if (!token || typeof token !== 'string') return false;
+    const parts = token.split('.');
+    if (parts.length !== 3) return false;
+    
+    try {
+        // Verify each part is valid base64
+        JSON.parse(atob(parts[0])); // header
+        JSON.parse(atob(parts[1])); // payload
+        return true;
+    } catch {
+        return false;
+    }
+}
+
 // Refresh token if needed
 async function refreshTokenIfNeeded() {
     const token = localStorage.getItem('token');
@@ -35,9 +51,11 @@ async function refreshTokenIfNeeded() {
             
             if (response.ok) {
                 const data = await response.json();
-                localStorage.setItem('token', data.token);
-                console.log('Token refreshed successfully');
-                return true;
+                if (isValidJWT(data.token)) {
+                    localStorage.setItem('token', data.token);
+                    console.log('Token refreshed successfully');
+                    return true;
+                }
             }
         } catch (error) {
             console.error('Token refresh failed:', error);
@@ -145,7 +163,6 @@ if (localStorage.getItem('token')) {
     refreshTokenIfNeeded();
 }
 if (!localStorage.getItem('token') && localStorage.getItem('userType') !== 'guest' && 
-    !window.location.pathname.includes('/login') && !window.location.pathname.includes('/register') &&
-    !window.location.search.includes('token=')) {
+    !window.location.pathname.includes('/login') && !window.location.pathname.includes('/register')) {
     window.location.href = '/login';
 }

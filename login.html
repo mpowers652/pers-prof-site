@@ -74,6 +74,14 @@
             }(document, 'script', 'facebook-jssdk'));
     </script>
     <script>
+        // Check for success parameter and show message
+        if (window.location.href.indexOf('success=true') !== -1) {
+            // OAuth login successful - redirect to home
+            setTimeout(() => {
+                window.location.href = '/';
+            }, 1000);
+        }
+        
         document.getElementById('loginForm').addEventListener('submit', async (e) => {
             e.preventDefault();
             const username = document.getElementById('username').value;
@@ -87,8 +95,18 @@
             
             const data = await response.json();
             if (data.success) {
-                localStorage.setItem('token', data.token);
-                window.location.href = '/';
+                // Verify token is valid JWT before storing
+                if (data.token && data.token.split('.').length === 3) {
+                    try {
+                        JSON.parse(atob(data.token.split('.')[1]));
+                        localStorage.setItem('token', data.token);
+                        window.location.href = '/';
+                    } catch {
+                        alert('Invalid token received');
+                    }
+                } else {
+                    alert('Invalid token format');
+                }
             } else {
                 alert(data.message);
             }
@@ -99,7 +117,6 @@
         }
         
         function loginWithFacebook() {
-            
             window.location.href = '/auth/facebook';
         }
         

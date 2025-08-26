@@ -101,8 +101,7 @@
     </main>
 
     <script src="auth.js"></script>
-    <script src="ad-control.js"></script>
-    
+    <script src="ad-control.js"></script>    
     <script src="script.js"></script>
     <script>
         let cameraStream;
@@ -160,10 +159,9 @@
             img.style.display = 'block';
             placeholder.style.display = 'none';
             
-            // Only save to localStorage if it's an uploaded/captured image
+            // Only save if it's an uploaded/captured image
             if (dataURL !== googlePhoto) {
                 uploadedPhoto = dataURL;
-                localStorage.setItem('profilePicture', dataURL);
                 showImageOptions();
             }
         }
@@ -206,7 +204,7 @@
             const img = document.getElementById('profileImg');
             const placeholder = document.getElementById('profilePlaceholder');
             
-            uploadedPhoto = localStorage.getItem('profilePicture');
+            // uploadedPhoto will be set when user uploads
             
             // If logged in, try to get Google profile picture
             if (token) {
