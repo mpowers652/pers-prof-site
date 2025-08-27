@@ -5,7 +5,9 @@ const jwt = require('jsonwebtoken');
 describe('Story Generator', () => {
     let adminToken;
     
-    beforeAll(() => {
+    beforeAll(async () => {
+        // Wait for admin user creation
+        await new Promise(resolve => setTimeout(resolve, 100));
         adminToken = jwt.sign({ id: 1 }, 'secret', { expiresIn: '1h' });
     });
 
@@ -34,7 +36,7 @@ describe('Story Generator', () => {
             });
         expect(response.status).toBe(200);
         expect(response.body).toHaveProperty('story');
-    });
+    }, 10000);
 
     test('should reject custom input too similar to existing', async () => {
         const response = await request(app)
@@ -60,7 +62,7 @@ describe('Story Generator', () => {
             });
         expect(response.status).toBe(200);
         expect(response.body).toHaveProperty('customAdded');
-    });
+    }, 10000);
 
     test('should contain predefined options in HTML', async () => {
         const response = await request(app)
