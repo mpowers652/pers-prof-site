@@ -107,8 +107,7 @@ bcrypt.hash(adminPassword, 10).then(hashedPassword => {
         email: ADMIN_EMAIL,
         password: hashedPassword,
         role: 'admin',
-        subscription: 'full',
-        openaiKey: process.env.NODE_ENV === 'test' ? 'test-openai-key' : undefined
+        subscription: 'full'
     });
     console.log(`Admin user created - Username: admin, Email: ${ADMIN_EMAIL}, Password: ${adminPassword}`);
 });
@@ -202,20 +201,12 @@ function requireAuth(req, res, next) {
 
 // Math calculator route
 app.get('/math', (req, res) => {
-    if (process.env.NODE_ENV === 'test') {
-        res.sendFile(path.join(__dirname, 'math.html'));
-    } else {
-        res.render('math.html');
-    }
+    res.sendFile(path.join(__dirname, 'math.html'));
 });
 
 // FFT Visualizer route
 app.get('/fft-visualizer', (req, res) => {
-    if (process.env.NODE_ENV === 'test') {
-        res.sendFile(path.join(__dirname, 'fft-visualizer.html'));
-    } else {
-        res.render('fft-visualizer.html');
-    }
+    res.sendFile(path.join(__dirname, 'fft-visualizer.html'));
 });
 
 // Story Generator route (requires full subscription)
@@ -229,8 +220,8 @@ app.get('/story-generator', (req, res) => {
         if (!user || (user.subscription !== 'full' && user.role !== 'admin')) {
             return res.status(403).send('Access denied. Full subscription required.');
         }
-        // Check if user has OpenAI key
-        if (!user.openaiKey) {
+        // Check if user has OpenAI key (admin uses master key)
+        if (!user.openaiKey && user.role !== 'admin') {
             return res.redirect('/request-api-key');
         }
         res.sendFile(path.join(__dirname, 'story-generator.html'));
@@ -250,7 +241,8 @@ app.post('/story/generate', express.json(), async (req, res) => {
             return res.status(403).json({ error: 'Full subscription required' });
         }
         
-        if (!user.openaiKey) {
+        // Admin uses master key, others need their own key
+        if (!user.openaiKey && user.role !== 'admin') {
             return res.status(400).json({ error: 'AI_KEY_MISSING', message: 'OpenAI key required for AI features' });
         }
         
@@ -290,8 +282,11 @@ app.post('/story/generate', express.json(), async (req, res) => {
         const prompt = `Write a ${adjective} story in ${wordCount} words about ${subject}.`;
         
         const orgId = await loadConditionalSecret('OPENAI_ORG_ID', 'OPENAI_ORG_ID');
+        const masterKey = await loadConditionalSecret('OPENAI_MASTER_API_KEY', 'OPENAI_MASTER_API_KEY');
+        const apiKey = user.role === 'admin' ? (masterKey || process.env.OPENAI_API_KEY) : user.openaiKey;
+        
         const openai = new OpenAI({ 
-            apiKey: user.openaiKey || process.env.OPENAI_API_KEY,
+            apiKey,
             organization: orgId
         });
         
@@ -695,11 +690,7 @@ app.post('/auth/refresh', (req, res) => {
 
 // Contact route
 app.get('/contact', (req, res) => {
-    if (process.env.NODE_ENV === 'test') {
-        res.sendFile(path.join(__dirname, 'contact.html'));
-    } else {
-        res.render('contact.html');
-    }
+    res.sendFile(path.join(__dirname, 'contact.html'));
 });
 
 // Privacy Policy route
@@ -1006,10 +997,7 @@ app.get('/', (req, res) => {
         return res.send(html);
     }
     
-    // For tests, allow access without authentication
-    if (process.env.NODE_ENV === 'test') {
-        return res.send(html);
-    }
+
     
     // Check if user is authenticated or guest
     const isAuthenticated = authToken || isGuest;

@@ -2,6 +2,7 @@ const request = require('supertest');
 const { evaluateExpression } = require('./server');
 
 // Mock environment variables
+process.env.NODE_ENV = 'test';
 process.env.GMAIL_CLIENT_ID = 'test-client-id';
 process.env.GMAIL_CLIENT_SECRET = 'test-client-secret';
 process.env.GMAIL_REFRESH_TOKEN = 'test-refresh-token';
@@ -15,7 +16,14 @@ jest.mock('googleapis', () => ({
                 setCredentials: jest.fn(),
                 getAccessToken: jest.fn().mockResolvedValue({ token: 'mock-token' })
             }))
-        }
+        },
+        gmail: jest.fn().mockReturnValue({
+            users: {
+                messages: {
+                    send: jest.fn().mockResolvedValue({ data: { id: 'mock-message-id' } })
+                }
+            }
+        })
     }
 }));
 
@@ -34,49 +42,6 @@ jest.mock('ejs', () => ({
 
 // Import actual server after mocking
 const app = require('./server');
-
-
-
-/* function evaluateExpression(expr) {
-    // Replace symbols for parsing
-    expr = expr.replace(/×/g, '*').replace(/÷/g, '/')
-           .replace(/\^/g, '^')
-           .replace(/sqrt\(/g, 'Math.sqrt(')
-           .replace(/asin\(/g, 'Math.asin(')
-           .replace(/acos\(/g, 'Math.acos(')
-           .replace(/atan\(/g, 'Math.atan(')
-           .replace(/(?<!a)sin\(/g, 'Math.sin(')
-           .replace(/(?<!a)cos\(/g, 'Math.cos(')
-           .replace(/(?<!a)tan\(/g, 'Math.tan(')
-           .replace(/ln\(/g, 'Math.log(')
-           .replace(/\be\b/g, 'Math.E')
-           .replace(/π/g, 'Math.PI')
-           .replace(/(\d+(?:\.\d+)?)!/g, (match, num) => `factorial(${num})`)
-    
-    // Check if expression contains actual variables (not function names or constants)
-    const testExpr = expr.replace(/\d+\.?\d*//*g, ''); // Remove numbers
-    const withoutFunctions = testExpr.replace(/Math\.asin\(|Math\.acos\(|Math\.atan\(|Math\.sqrt\(|Math\.sin\(|Math\.cos\(|Math\.tan\(|Math\.log\(|sqrt\(|asin\(|acos\(|atan\(|sin\(|cos\(|tan\(|ln\(|factorial\(|Math\.PI|Math\.E|\(|\)|\+|\-|\*|\/|\^|\s|π|\be\b/g, '');
-    
-    if (/[a-zA-Z]/.test(withoutFunctions)) {
-        return expr; // Return symbolic expressions as-is
-    }
-    
-    // Evaluate numeric expression with order of operations
-    const result = Function('"use strict"; function factorial(n) { return n <= 1 ? 1 : n * factorial(n-1); } return (' + expr + ')')();
-    
-    // Apply convergence threshold for floating point precision
-    if (typeof result === 'number' && isFinite(result)) {
-        // Round to nearest integer if within 1e-14 tolerance
-        const rounded = Math.round(result);
-        if (Math.abs(result - rounded) < 1e-14) {
-            return rounded;
-        }
-        // Round to 15 significant digits to handle floating point errors
-        return Math.round(result * 1e15) / 1e15;
-    }
-    
-    return result;
-} */
 
 function simplifySymbolic(expr) {
     // Split by + and - while keeping operators
@@ -221,6 +186,9 @@ describe('Server Tests', () => {
 
     test('GET / should return index.html', async () => {
         const res = await request(app).get('/');
+        console.log('Status:', res.status);
+        console.log('Headers:', res.headers);
+        console.log('Body length:', res.text?.length || 0);
         expect(res.status).toBe(200);
     });
 
