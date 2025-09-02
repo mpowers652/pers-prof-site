@@ -32,25 +32,22 @@ describe('Frontend Tests', () => {
         document.getElementById('num2').value = '3';
         document.getElementById('operation').value = '+';
 
-        // Load and execute the calculate function
-        const calculateFunction = `
-            async function calculate() {
-                const a = document.getElementById('num1').value;
-                const b = document.getElementById('num2').value;
-                const op = document.getElementById('operation').value;
-                
-                const response = await fetch('/math/calculate', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ a, b, operation: op })
-                });
-                
-                const data = await response.json();
-                document.getElementById('result').innerHTML = \`<h3>Result: \${data.result}</h3>\`;
-            }
-        `;
+        // Define and execute the calculate function
+        async function calculate() {
+            const a = document.getElementById('num1').value;
+            const b = document.getElementById('num2').value;
+            const op = document.getElementById('operation').value;
+            
+            const response = await fetch('/math/calculate', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ a, b, operation: op })
+            });
+            
+            const data = await response.json();
+            document.getElementById('result').innerHTML = `<h3>Result: ${data.result}</h3>`;
+        }
         
-        eval(calculateFunction);
         await calculate();
 
         // Verify fetch was called with correct parameters
