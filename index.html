@@ -21,7 +21,7 @@
                         <li><a href="/book-scanner">Book Scanner</a></li>
                         <li><a href="/fft-visualizer">FFT audio visualizer</a></li>
                         <li><a href="/math">Math Calculator</a></li>
-                        <li><a href="/story-generator">Story Generator</a></li>
+                        <li><a href="javascript:void(0)" onclick="accessStoryGenerator()">Story Generator</a></li>
                     </ul>
                 </li>
                 <li><a href="/contact">Contact</a></li>
@@ -51,6 +51,15 @@
                 document.addEventListener('DOMContentLoaded', async function() {
                     const token = localStorage.getItem('token');
                     
+                    // Check for error message in URL
+                    const urlParams = new URLSearchParams(window.location.search);
+                    const error = urlParams.get('error');
+                    if (error) {
+                        showToast(error);
+                        // Clean URL
+                        window.history.replaceState({}, document.title, window.location.pathname);
+                    }
+                    
                     if (token) {
                         try {
                             const response = await fetch('/auth/verify', {
@@ -71,6 +80,14 @@
                         }
                     }
                 });
+                
+                function showToast(message) {
+                    const toast = document.createElement('div');
+                    toast.style.cssText = 'position:fixed;top:20px;right:20px;background:#f44336;color:white;padding:15px;border-radius:5px;z-index:1000;display:flex;align-items:center;gap:10px;';
+                    toast.innerHTML = `${message} <button onclick="this.parentElement.remove()" style="background:none;border:none;color:white;cursor:pointer;font-size:18px;">×</button>`;
+                    document.body.appendChild(toast);
+                    setTimeout(() => toast.remove(), 10000);
+                }
             </script>
             <h2>Welcome <span id="usernameSpan">Guest</span></h2>
             <p>The place to learn all about me as a developer</p>
@@ -95,6 +112,11 @@
                     <h3>Math Calculator</h3>
                     <p>Symbolic mathematics calculator</p>
                     <a href="/math" class="btn">Access</a>
+                </div>
+                <div class="service-card">
+                    <h3>Story Generator</h3>
+                    <p>AI-powered story creation tool</p>
+                    <button onclick="accessStoryGenerator()" class="btn">Access</button>
                 </div>
             </div>
         </section>
@@ -233,6 +255,41 @@
                 placeholder.style.display = 'none';
             }
         });
+        
+        function accessStoryGenerator() {
+            const token = localStorage.getItem('token') || getCookie('token');
+            console.log('Accessing story generator with token:', token ? token.substring(0, 20) + '...' : 'No token');
+            if (token) {
+                fetch('/story-generator', {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                }).then(response => {
+                    console.log('Story generator response status:', response.status);
+                    if (response.ok) {
+                        return response.text();
+                    } else {
+                        throw new Error('Access denied');
+                    }
+                }).then(html => {
+                    document.open();
+                    document.write(html);
+                    document.close();
+                }).catch(() => {
+                    window.location.href = '/login?redirect=/story-generator';
+                });
+            } else {
+                console.log('No token found, redirecting to login');
+                window.location.href = '/login?redirect=/story-generator';
+            }
+        }
+        
+        function getCookie(name) {
+            const cookies = document.cookie.split(';');
+            for (let cookie of cookies) {
+                const [key, value] = cookie.trim().split('=');
+                if (key === name) return value;
+            }
+            return null;
+        }
     </script>
 </body>
 </html>

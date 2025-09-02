@@ -177,7 +177,7 @@ window.fetch = function(url, options = {}) {
 // Only clear expired tokens on explicit check
 // Removed automatic clearing on script load
 
-// Only start token management if token exists, don't auto-redirect
+// Only start token management if token exists
 if (getToken()) {
     startTokenRefreshTimer();
     refreshTokenIfNeeded();

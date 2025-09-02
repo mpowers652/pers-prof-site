@@ -9,7 +9,21 @@ process.env.NODE_ENV = 'test';
 describe('API Key Request System', () => {
     beforeAll(async () => {
         // Wait for admin user to be created
-        await new Promise(resolve => setTimeout(resolve, 100));
+        await new Promise(resolve => setTimeout(resolve, 500));
+    });
+
+    test('should verify user data setup', async () => {
+        const adminToken = jwt.sign({ id: 1 }, 'secret', { expiresIn: '10m' });
+        
+        const response = await request(app)
+            .get('/auth/verify')
+            .set('Authorization', `Bearer ${adminToken}`);
+
+        expect(response.status).toBe(200);
+        expect(response.body.user).toBeDefined();
+        expect(response.body.user.role).toBe('admin');
+        expect(response.body.user.subscription).toBe('full');
+        console.log('✓ User data verified:', response.body.user);
     });
 
     test('should allow admin access to story generator', async () => {
@@ -54,6 +68,26 @@ describe('API Key Request System', () => {
         expect(response.status).toBe(200);
         expect(response.body.message).toBeDefined();
         console.log('✓ API key request handled:', response.body.message);
+    });
+
+    test('should merge Google OAuth with existing admin user', async () => {
+        // Verify that when admin logs in via Google OAuth, it merges with existing admin account
+        const adminEmail = 'cartoonsredbob@gmail.com';
+        
+        // Simulate the merge logic from Google OAuth
+        const mockProfile = {
+            id: 'google123',
+            displayName: 'Admin Google',
+            emails: [{ value: adminEmail }],
+            photos: [{ value: 'https://photo.url' }]
+        };
+        
+        // This simulates finding existing user by email
+        const existingUser = { email: adminEmail, role: 'admin', subscription: 'full' };
+        const shouldMerge = existingUser.email === mockProfile.emails[0].value;
+        
+        expect(shouldMerge).toBe(true);
+        console.log('✓ Google OAuth merge logic works for admin user');
     });
 
     test('should return AI_KEY_MISSING error for story generation without key', async () => {

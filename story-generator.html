@@ -61,6 +61,13 @@
 
     <script src="auth.js"></script>
     <script>
+        // Check if user has token, if not redirect to login
+        const token = localStorage.getItem('token');
+        if (!token) {
+            window.location.href = '/login?redirect=/story-generator';
+        }
+    </script>
+    <script>
         let customAdjectives = JSON.parse(localStorage.getItem('customAdjectives') || '[]');
         let customScarySubjects = JSON.parse(localStorage.getItem('customScarySubjects') || '[]');
         let customOtherSubjects = JSON.parse(localStorage.getItem('customOtherSubjects') || '[]');
@@ -125,15 +132,25 @@
             
             document.getElementById('story-output').innerHTML = '<div class="loading">Generating story...</div>';
             
+            const token = localStorage.getItem('token');
+            const headers = { 'Content-Type': 'application/json' };
+            if (token) {
+                headers['Authorization'] = `Bearer ${token}`;
+            }
+            
             const response = await fetch('/story/generate', {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers: headers,
                 body: JSON.stringify({ adjective, wordCount, subject })
             });
             
             const data = await response.json();
             if (data.error) {
-                document.getElementById('story-output').innerHTML = `<div class="error">${data.error}</div>`;
+                if (data.error === 'AI_KEY_MISSING') {
+                    document.getElementById('story-output').innerHTML = `<div class="error">${data.message} <a href="/request-api-key">Request AI Access</a></div>`;
+                } else {
+                    document.getElementById('story-output').innerHTML = `<div class="error">${data.error}</div>`;
+                }
             } else {
                 document.getElementById('story-output').innerHTML = `<div class="story-result"><h3>Your Story:</h3><p>${data.story}</p></div>`;
                 
