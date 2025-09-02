@@ -112,7 +112,7 @@ describe('localStorage Token Saving', () => {
         });
 
         test('should handle empty token parameter', async () => {
-            const response = await request(app)
+            await request(app)
                 .get('/?token=')
                 .expect(302); // Redirects to login since empty token
         });

@@ -580,7 +580,9 @@ app.get('/auth/google/callback', (req, res, next) => {
         
         const token = jwt.sign({ id: req.user.id, iat: Math.floor(Date.now() / 1000) }, 'secret', { expiresIn: '1h' });
         console.log('Google OAuth success, token generated:', token.substring(0, 20) + '...');
-        res.redirect(`/?token=${token}`);
+        // Security: Set token as httpOnly cookie instead of URL parameter
+        res.cookie('token', token, { httpOnly: true, secure: process.env.NODE_ENV === 'production', maxAge: 3600000 });
+        res.redirect('/login?success=true');
     });
 });
 
@@ -604,7 +606,9 @@ app.get('/auth/facebook/callback', (req, res, next) => {
         
         const token = jwt.sign({ id: req.user.id, iat: Math.floor(Date.now() / 1000) }, 'secret', { expiresIn: '1h' });
         req.session.authToken = token;
-        res.redirect(`/?token=${token}`);
+        // Security: Set token as httpOnly cookie instead of URL parameter
+        res.cookie('token', token, { httpOnly: true, secure: process.env.NODE_ENV === 'production', maxAge: 3600000 });
+        res.redirect('/login?success=true');
     });
 });
 
@@ -1001,50 +1005,9 @@ app.get('/', (req, res) => {
     
     let html = fs.readFileSync(path.join(__dirname, 'index.html'), 'utf8');
     
-    // Handle token injection from URL parameter
+    // Security: Never accept tokens from URL parameters - redirect to login
     if (urlToken) {
-        // Validate token before injection
-        try {
-            const decoded = jwt.verify(urlToken, 'secret');
-            const user = users.find(u => u.id === decoded.id);
-            if (!user) {
-                return res.redirect('/login');
-            }
-        } catch {
-            return res.redirect('/login');
-        }
-        
-        const escapedToken = urlToken.replace(/'/g, "\\\''").replace(/"/g, '\\\"');
-        const tokenInjectionScript = `
-        <script>
-            (function() {
-                var token = '${escapedToken}';
-                try {
-                    localStorage.setItem('token', token);
-                    localStorage.removeItem('userType');
-                    
-                    // Verify token was saved
-                    var saved = localStorage.getItem('token');
-                    if (saved === token) {
-                        console.log('Token verified in localStorage');
-                    } else {
-                        console.log('Token save failed, retrying...');
-                        setTimeout(function() {
-                            localStorage.setItem('token', token);
-                        }, 100);
-                    }
-                    
-                    // Clean URL
-                    if (window.history && window.history.replaceState) {
-                        window.history.replaceState({}, document.title, window.location.pathname);
-                    }
-                } catch (e) {
-                    console.error('Token injection failed:', e);
-                }
-            })();
-        </script>`;
-        html = html.replace('</head>', tokenInjectionScript + '</head>');
-        return res.send(html);
+        return res.redirect('/login');
     }
     
     // Handle guest mode
@@ -1057,7 +1020,18 @@ app.get('/', (req, res) => {
         return res.send(html);
     }
     
-
+    // Validate authorization token if present
+    if (authToken) {
+        try {
+            const decoded = jwt.verify(authToken, 'secret');
+            const user = users.find(u => u.id === decoded.id);
+            if (!user) {
+                return res.redirect('/login');
+            }
+        } catch {
+            return res.redirect('/login');
+        }
+    }
     
     // Check if user is authenticated or guest
     const isAuthenticated = authToken || isGuest;
