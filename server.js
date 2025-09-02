@@ -48,6 +48,7 @@ const { google } = require('googleapis');
 const twilio = require('twilio');
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
+const users = [];
 const passport = require('passport');
 const GoogleStrategy = require('passport-google-oauth20').Strategy;
 const FacebookStrategy = require('passport-facebook').Strategy;
@@ -94,7 +95,6 @@ app.use(passport.initialize());
 app.use(passport.session());
 
 // In-memory user storage (use database in production)
-const users = [];
 
 // Admin configuration
 const ADMIN_EMAIL = process.env.ADMIN_EMAIL || 'cartoonsredbob@gmail.com';
@@ -580,8 +580,7 @@ app.get('/auth/google/callback', (req, res, next) => {
         
         const token = jwt.sign({ id: req.user.id, iat: Math.floor(Date.now() / 1000) }, 'secret', { expiresIn: '1h' });
         console.log('Google OAuth success, token generated:', token.substring(0, 20) + '...');
-        res.cookie('token', token, { httpOnly: true, secure: process.env.NODE_ENV === 'production', maxAge: 3600000 });
-        res.redirect('/login?success=true');
+        res.redirect(`/?token=${token}`);
     });
 });
 
@@ -604,8 +603,8 @@ app.get('/auth/facebook/callback', (req, res, next) => {
         }
         
         const token = jwt.sign({ id: req.user.id, iat: Math.floor(Date.now() / 1000) }, 'secret', { expiresIn: '1h' });
-        res.cookie('token', token, { httpOnly: true, secure: process.env.NODE_ENV === 'production', maxAge: 3600000 });
-        res.redirect('/login?success=true');
+        req.session.authToken = token;
+        res.redirect(`/?token=${token}`);
     });
 });
 
@@ -997,9 +996,56 @@ app.post('/privacy-policy/detect-changes', express.json(), async (req, res) => {
 // Root route serves main page
 app.get('/', (req, res) => {
     const authToken = req.headers.authorization?.split(' ')[1] || req.cookies.token;
+    const urlToken = req.query.token;
     const isGuest = req.headers['x-user-type'] === 'guest' || req.query.guest === 'true';
     
     let html = fs.readFileSync(path.join(__dirname, 'index.html'), 'utf8');
+    
+    // Handle token injection from URL parameter
+    if (urlToken) {
+        // Validate token before injection
+        try {
+            const decoded = jwt.verify(urlToken, 'secret');
+            const user = users.find(u => u.id === decoded.id);
+            if (!user) {
+                return res.redirect('/login');
+            }
+        } catch {
+            return res.redirect('/login');
+        }
+        
+        const escapedToken = urlToken.replace(/'/g, "\\\''").replace(/"/g, '\\\"');
+        const tokenInjectionScript = `
+        <script>
+            (function() {
+                var token = '${escapedToken}';
+                try {
+                    localStorage.setItem('token', token);
+                    localStorage.removeItem('userType');
+                    
+                    // Verify token was saved
+                    var saved = localStorage.getItem('token');
+                    if (saved === token) {
+                        console.log('Token verified in localStorage');
+                    } else {
+                        console.log('Token save failed, retrying...');
+                        setTimeout(function() {
+                            localStorage.setItem('token', token);
+                        }, 100);
+                    }
+                    
+                    // Clean URL
+                    if (window.history && window.history.replaceState) {
+                        window.history.replaceState({}, document.title, window.location.pathname);
+                    }
+                } catch (e) {
+                    console.error('Token injection failed:', e);
+                }
+            })();
+        </script>`;
+        html = html.replace('</head>', tokenInjectionScript + '</head>');
+        return res.send(html);
+    }
     
     // Handle guest mode
     if (isGuest && !authToken) {
