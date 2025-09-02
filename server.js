@@ -188,7 +188,7 @@ passport.deserializeUser((id, done) => {
 
 // Authentication middleware with auto-refresh
 function requireAuth(req, res, next) {
-    const token = req.headers.authorization?.split(' ')[1];
+    const token = req.headers.authorization?.split(' ')[1] || req.cookies.token;
     const isGuest = req.headers['x-user-type'] === 'guest' || req.query.guest === 'true';
     
     if (token || isGuest || req.path === '/login' || req.path === '/register' || req.path.startsWith('/auth/')) {
@@ -582,7 +582,7 @@ app.get('/auth/google/callback', (req, res, next) => {
         console.log('Google OAuth success, token generated:', token.substring(0, 20) + '...');
         // Security: Set token as httpOnly cookie instead of URL parameter
         res.cookie('token', token, { httpOnly: true, secure: process.env.NODE_ENV === 'production', maxAge: 3600000 });
-        res.redirect('/login?success=true');
+        res.redirect('/');
     });
 });
 
@@ -608,7 +608,7 @@ app.get('/auth/facebook/callback', (req, res, next) => {
         req.session.authToken = token;
         // Security: Set token as httpOnly cookie instead of URL parameter
         res.cookie('token', token, { httpOnly: true, secure: process.env.NODE_ENV === 'production', maxAge: 3600000 });
-        res.redirect('/login?success=true');
+        res.redirect('/');
     });
 });
 
@@ -1027,6 +1027,17 @@ app.get('/', (req, res) => {
             const user = users.find(u => u.id === decoded.id);
             if (!user) {
                 return res.redirect('/login');
+            }
+            // If cookie token exists, inject it into localStorage for client-side use
+            if (req.cookies.token) {
+                const tokenScript = `
+                <script>
+                    (function() {
+                        localStorage.setItem('token', '${req.cookies.token}');
+                        window.__authToken = '${req.cookies.token}';
+                    })();
+                </script>`;
+                html = html.replace('<head>', '<head>' + tokenScript);
             }
         } catch {
             return res.redirect('/login');

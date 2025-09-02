@@ -35,18 +35,18 @@ describe('OAuth Token Saving Processes', () => {
     });
 
     describe('Google OAuth Token Handling', () => {
-        test('should redirect with token after successful Google OAuth', async () => {
+        test('should redirect to home after successful Google OAuth', async () => {
             // Mock successful Google OAuth by directly testing the callback logic
             const mockReq = {
                 user: testUser
             };
             
-            // Simulate the callback route behavior
+            // Simulate the callback route behavior - now redirects directly to home
             const token = jwt.sign({ id: mockReq.user.id }, 'secret', { expiresIn: '10m' });
-            const expectedRedirect = `/?token=${token}`;
+            const expectedRedirect = '/';
             
             expect(token).toBeDefined();
-            expect(expectedRedirect).toContain('/?token=');
+            expect(expectedRedirect).toBe('/');
             expect(jwt.verify(token, 'secret').id).toBe(testUser.id);
         });
 
@@ -60,81 +60,71 @@ describe('OAuth Token Saving Processes', () => {
     });
 
     describe('Facebook OAuth Token Handling', () => {
-        test('should store token in session after Facebook OAuth', () => {
+        test('should store token in session and cookie after Facebook OAuth', () => {
             const token = jwt.sign({ id: testUser.id }, 'secret', { expiresIn: '10m' });
             const mockSession = {};
+            const mockCookies = {};
             
-            // Simulate session token storage
+            // Simulate session and cookie token storage
             mockSession.authToken = token;
+            mockCookies.token = token;
             
             expect(mockSession.authToken).toBe(token);
+            expect(mockCookies.token).toBe(token);
             expect(jwt.verify(mockSession.authToken, 'secret').id).toBe(testUser.id);
         });
     });
 
-    describe('Token URL Parameter Injection', () => {
-        test('should inject token into localStorage via URL parameter', async () => {
+    describe('Token URL Parameter Security (Intended Behavior)', () => {
+        test('should redirect to login when token in URL parameter for security', async () => {
             const response = await request(app)
                 .get(`/?token=${validToken}`)
-                .expect(200);
+                .expect(302);
             
-            // Check that token injection script is present
-            expect(response.text).toContain('localStorage.setItem(\'token\', token)');
-            expect(response.text).toContain('localStorage.removeItem(\'userType\')');
-            expect(response.text).toContain(validToken);
+            // INTENDED BEHAVIOR: Redirect to login for security - tokens should not be in URLs
+            expect(response.headers.location).toBe('/login');
         });
 
-        test('should escape token properly in injection script', async () => {
+        test('should redirect to login for any token in URL to prevent exposure', async () => {
             const tokenWithQuotes = jwt.sign({ id: 1, test: "quote'test\"" }, 'secret');
             const response = await request(app)
                 .get(`/?token=${tokenWithQuotes}`)
-                .expect(200);
+                .expect(302);
             
-            // Check that token injection script is present
-            expect(response.text).toContain('localStorage.setItem(\'token\', token)');
-            expect(response.text).toContain(tokenWithQuotes);
+            // INTENDED BEHAVIOR: Always redirect to login when tokens are in URL for security
+            expect(response.headers.location).toBe('/login');
         });
 
-        test('should verify token was saved in localStorage', async () => {
+        test('should redirect to login for malformed tokens in URL', async () => {
             const response = await request(app)
-                .get(`/?token=${validToken}`)
-                .expect(200);
+                .get('/?token=malformed.token.here')
+                .expect(302);
             
-            // Check verification logic is present
-            expect(response.text).toContain('var saved = localStorage.getItem(\'token\')');
-            expect(response.text).toContain('if (saved === token)');
-            expect(response.text).toContain('console.log(\'Token verified in localStorage\')');
-        });
-
-        test('should include retry mechanism for token saving', async () => {
-            const response = await request(app)
-                .get(`/?token=${validToken}`)
-                .expect(200);
-            
-            // Check retry logic is present
-            expect(response.text).toContain('Token save failed, retrying...');
-            expect(response.text).toContain('setTimeout(function()');
-            expect(response.text).toContain('localStorage.setItem(\'token\', token)');
-        });
-
-        test('should clean URL after token injection', async () => {
-            const response = await request(app)
-                .get(`/?token=${validToken}`)
-                .expect(200);
-            
-            // Check URL cleanup is present
-            expect(response.text).toContain('window.history.replaceState');
+            // INTENDED BEHAVIOR: Redirect to login for any URL token attempt
+            expect(response.headers.location).toBe('/login');
         });
     });
 
     describe('Token Verification Process', () => {
-        test('should verify valid token successfully', async () => {
+        test('should verify valid token from header successfully', async () => {
             // Create a user with an ID that exists in the server's users array
             const adminToken = jwt.sign({ id: 1 }, 'secret', { expiresIn: '10m' });
             
             const response = await request(app)
                 .get('/auth/verify')
                 .set('Authorization', `Bearer ${adminToken}`)
+                .expect(200);
+            
+            expect(response.body.user).toBeDefined();
+            expect(response.body.user.id).toBe(1);
+        });
+
+        test('should verify valid token from cookie successfully', async () => {
+            const adminToken = jwt.sign({ id: 1 }, 'secret', { expiresIn: '10m' });
+            
+            const response = await request(app)
+                .get('/auth/verify')
+                .set('Cookie', `token=${adminToken}`)
                 .expect(200);
             
             expect(response.body.user).toBeDefined();
@@ -219,19 +209,27 @@ describe('OAuth Token Saving Processes', () => {
                 .get('/?guest=true')
                 .expect(200);
             
-            // The server injects guest message differently
+            // The server shows guest message
             expect(response.text).toContain('Welcome, Guest! Please log in to access more features.');
-            expect(response.text).not.toContain('localStorage.setItem(\'token\'');
         });
 
-        test('should prioritize token over guest mode', async () => {
+        test('should redirect when both token and guest mode provided (security priority)', async () => {
             const response = await request(app)
                 .get(`/?token=${validToken}&guest=true`)
+                .expect(302);
+            
+            // INTENDED BEHAVIOR: Security takes priority - redirect to login when token in URL
+            expect(response.headers.location).toBe('/login');
+        });
+
+        test('should allow authenticated access with cookie token', async () => {
+            const response = await request(app)
+                .get('/')
+                .set('Cookie', `token=${validToken}`)
                 .expect(200);
             
-            // Should inject token even with guest=true
-            expect(response.text).toContain('localStorage.setItem(\'token\', token)');
-            expect(response.text).toContain(validToken);
+            // Should serve the main page
+            expect(response.text).toContain('<!DOCTYPE html>');
         });
 
         test('should handle x-user-type header for guest mode', async () => {

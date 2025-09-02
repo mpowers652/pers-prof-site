@@ -78,9 +78,9 @@ function getCookieToken() {
     return null;
 }
 
-// Get token from localStorage or cookies
+// Get token from localStorage, global variable, or cookies
 function getToken() {
-    return localStorage.getItem('token') || getCookieToken();
+    return localStorage.getItem('token') || window.__authToken || getCookieToken();
 }
 
 // Clear expired token
@@ -177,12 +177,8 @@ window.fetch = function(url, options = {}) {
 // Only clear expired tokens on explicit check
 // Removed automatic clearing on script load
 
-// Check auth on page load
+// Only start token management if token exists, don't auto-redirect
 if (getToken()) {
     startTokenRefreshTimer();
     refreshTokenIfNeeded();
-}
-if (!getToken() && localStorage.getItem('userType') !== 'guest' && 
-    !window.location.pathname.includes('/login') && !window.location.pathname.includes('/register')) {
-    window.location.href = '/login';
 }
