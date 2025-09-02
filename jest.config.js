@@ -5,5 +5,8 @@ module.exports = {
         '*.js',
         '!jest.config.js',
         '!coverage/**'
+    ],
+    transformIgnorePatterns: [
+        'node_modules/(?!@xenova/transformers)'
     ]
 };

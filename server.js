@@ -52,6 +52,7 @@ const passport = require('passport');
 const GoogleStrategy = require('passport-google-oauth20').Strategy;
 const FacebookStrategy = require('passport-facebook').Strategy;
 const OpenAI = require('openai');
+const localGenerator = require('./local-story-generator');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -298,11 +299,24 @@ app.post('/story/generate', express.json(), async (req, res) => {
         
         res.json({ 
             story: completion.choices[0].message.content,
-            customAdded: Object.keys(customAdded).length > 0 ? customAdded : null
+            customAdded: Object.keys(customAdded).length > 0 ? customAdded : null,
+            source: 'openai'
         });
     } catch (error) {
         console.error('OpenAI error:', error.message);
-        res.status(500).json({ error: 'Story generation failed' });
+        
+        // Try local generator as fallback
+        try {
+            const localStory = await localGenerator.generateStory(adjective, wordCount, subject);
+            return res.json({ 
+                story: localStory,
+                customAdded: Object.keys(customAdded).length > 0 ? customAdded : null,
+                source: 'local'
+            });
+        } catch (localError) {
+            console.error('Local generator error:', localError.message);
+            res.status(500).json({ error: 'Story generation failed' });
+        }
     }
 });
 

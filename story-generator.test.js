@@ -73,4 +73,19 @@ describe('Story Generator', () => {
         expect(response.text).toContain('200');
         expect(response.text).toContain('1000');
     });
+
+    test('should indicate source when using local generator', async () => {
+        const response = await request(app)
+            .post('/story/generate')
+            .set('Authorization', `Bearer ${adminToken}`)
+            .send({
+                adjective: 'adventurous',
+                wordCount: '150',
+                subject: 'robots'
+            });
+        expect(response.status).toBe(200);
+        expect(response.body).toHaveProperty('story');
+        expect(response.body).toHaveProperty('source');
+        expect(['openai', 'local']).toContain(response.body.source);
+    }, 15000);
 });
