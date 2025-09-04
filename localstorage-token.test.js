@@ -25,6 +25,9 @@ describe('localStorage Token Saving', () => {
         });
 
         test('should require authorization header for authentication', async () => {
+            // Ensure admin user exists
+            await request(app).post('/create-admin').send();
+            
             const response = await request(app)
                 .get('/')
                 .set('Authorization', `Bearer ${validToken}`)

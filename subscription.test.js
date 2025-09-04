@@ -10,8 +10,8 @@ describe('Subscription Access', () => {
         // Wait for admin user creation
         await new Promise(resolve => setTimeout(resolve, 100));
         
-        // Regular user without full subscription
-        regularToken = jwt.sign({ id: 999 }, 'secret', { expiresIn: '1h' });
+        // Premium user without full subscription (ID 2 has premium subscription)
+        regularToken = jwt.sign({ id: 2 }, 'secret', { expiresIn: '1h' });
         // Admin user with full subscription
         adminToken = jwt.sign({ id: 1 }, 'secret', { expiresIn: '1h' });
     });

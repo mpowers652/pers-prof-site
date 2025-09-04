@@ -238,7 +238,7 @@ app.get('/story-generator', (req, res) => {
     
     if (!token) {
         console.log('Story generator access denied: No token provided');
-        return res.redirect('/login?redirect=/story-generator');
+        return res.status(401).send('Access denied. Full subscription required.');
     }
     
     try {
@@ -253,7 +253,7 @@ app.get('/story-generator', (req, res) => {
         
         if (user.subscription !== 'full' && user.role !== 'admin') {
             console.log('Story generator access denied: Insufficient subscription level');
-            return res.redirect('/?error=Story Generator requires full subscription');
+            return res.status(403).send('Access denied. Full subscription required.');
         }
         
         // Check if user has OpenAI key (admin uses master key)
@@ -266,7 +266,7 @@ app.get('/story-generator', (req, res) => {
         res.sendFile(path.join(__dirname, 'story-generator.html'));
     } catch (error) {
         console.log('Story generator access denied: Invalid token', error.message);
-        return res.redirect('/login?redirect=/story-generator');
+        return res.status(401).send('Invalid token.');
     }
 });
 

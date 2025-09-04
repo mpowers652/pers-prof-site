@@ -4,7 +4,10 @@ const app = require('./server');
 describe('Auto Token Refresh', () => {
     let validToken, expiredToken;
 
-    beforeAll(() => {
+    beforeAll(async () => {
+        // Wait for admin user creation
+        await new Promise(resolve => setTimeout(resolve, 200));
+        
         // Create tokens for testing
         const jwt = require('jsonwebtoken');
         validToken = jwt.sign({ id: 1 }, 'secret', { expiresIn: '1h' });
@@ -12,6 +15,9 @@ describe('Auto Token Refresh', () => {
     });
 
     test('should refresh valid token', async () => {
+        // Small delay to ensure different timestamp
+        await new Promise(resolve => setTimeout(resolve, 1000));
+        
         const response = await request(app)
             .post('/auth/refresh')
             .set('Authorization', `Bearer ${validToken}`);

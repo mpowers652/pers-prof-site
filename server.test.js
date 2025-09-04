@@ -1,5 +1,6 @@
 const request = require('supertest');
 const { evaluateExpression } = require('./server');
+const jwt = require('jsonwebtoken');
 
 // Mock environment variables
 process.env.NODE_ENV = 'test';
@@ -184,12 +185,22 @@ describe('Server Tests', () => {
         expect(res.body.success).toBe(false);
     });
 
-    test('GET / should return index.html', async () => {
+    test('GET / should redirect to login when unauthenticated', async () => {
         const res = await request(app).get('/');
-        console.log('Status:', res.status);
-        console.log('Headers:', res.headers);
-        console.log('Body length:', res.text?.length || 0);
+        expect(res.status).toBe(302);
+        expect(res.headers.location).toBe('/login');
+    });
+
+    test('GET / should return home page for authenticated users', async () => {
+        // Wait for admin user creation
+        await new Promise(resolve => setTimeout(resolve, 100));
+        
+        const adminToken = jwt.sign({ id: 1 }, 'secret', { expiresIn: '1h' });
+        const res = await request(app)
+            .get('/')
+            .set('Authorization', `Bearer ${adminToken}`);
         expect(res.status).toBe(200);
+        expect(res.text).toContain('html');
     });
 
     test('POST /math/calculate should handle calculations', async () => {
