@@ -1,3 +1,5 @@
+// Add OpenAI shim for Node.js environment
+require('openai/shims/node');
 const OpenAI = require('openai');
 require('dotenv').config();
 

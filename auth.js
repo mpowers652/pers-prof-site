@@ -163,7 +163,15 @@ function setAuthHeaders() {
 const originalFetch = window.fetch;
 window.fetch = function(url, options = {}) {
     options.headers = { ...options.headers, ...setAuthHeaders() };
-    return originalFetch(url, options).catch(error => {
+    return originalFetch(url, options).then(response => {
+        if (response.status === 401) {
+            clearExpiredToken();
+            if (!window.location.pathname.includes('/login')) {
+                window.location.href = '/login';
+            }
+        }
+        return response;
+    }).catch(error => {
         if (error.status === 401) {
             clearExpiredToken();
             if (!window.location.pathname.includes('/login')) {
@@ -176,6 +184,45 @@ window.fetch = function(url, options = {}) {
 
 // Only clear expired tokens on explicit check
 // Removed automatic clearing on script load
+
+// Make functions globally available for testing
+if (typeof window !== 'undefined') {
+    window.isTokenExpired = isTokenExpired;
+    window.isTokenExpiringSoon = isTokenExpiringSoon;
+    window.isValidJWT = isValidJWT;
+    window.getCookieToken = getCookieToken;
+    window.getToken = getToken;
+    window.clearExpiredToken = clearExpiredToken;
+    window.refreshTokenIfNeeded = refreshTokenIfNeeded;
+    window.setAuthHeaders = setAuthHeaders;
+    window.trackActivity = trackActivity;
+    window.startTokenRefreshTimer = startTokenRefreshTimer;
+}
+
+// Make functions globally available for Node.js testing
+if (typeof global !== 'undefined') {
+    global.isTokenExpired = isTokenExpired;
+    global.isTokenExpiringSoon = isTokenExpiringSoon;
+    global.isValidJWT = isValidJWT;
+    global.getCookieToken = getCookieToken;
+    global.getToken = getToken;
+    global.clearExpiredToken = clearExpiredToken;
+    global.refreshTokenIfNeeded = refreshTokenIfNeeded;
+    global.setAuthHeaders = setAuthHeaders;
+    global.trackActivity = trackActivity;
+    global.startTokenRefreshTimer = startTokenRefreshTimer;
+    
+    // Expose variables with getters/setters for testing
+    Object.defineProperty(global, 'lastActivity', {
+        get: () => lastActivity,
+        set: (value) => { lastActivity = value; }
+    });
+    
+    Object.defineProperty(global, 'refreshInterval', {
+        get: () => refreshInterval,
+        set: (value) => { refreshInterval = value; }
+    });
+}
 
 // Only start token management if token exists
 if (getToken()) {

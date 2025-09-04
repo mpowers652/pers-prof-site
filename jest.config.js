@@ -1,5 +1,5 @@
 module.exports = {
-    testEnvironment: 'node',
+    testEnvironment: 'jsdom',
     testMatch: ['**/*.test.js'],
     collectCoverageFrom: [
         '*.js',
@@ -8,5 +8,6 @@ module.exports = {
     ],
     transformIgnorePatterns: [
         'node_modules/(?!@xenova/transformers)'
-    ]
+    ],
+    setupFilesAfterEnv: ['<rootDir>/test-setup.js']
 };

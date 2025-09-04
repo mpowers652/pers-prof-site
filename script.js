@@ -36,3 +36,9 @@ function addService(name, description, url) {
     menuItem.innerHTML = `<a href="${url}">${name}</a>`;
     dropdownMenu.appendChild(menuItem);
 }
+
+// Expose functions globally for testing
+if (typeof global !== 'undefined') {
+    global.checkServiceStatus = checkServiceStatus;
+    global.addService = addService;
+}

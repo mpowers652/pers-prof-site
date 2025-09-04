@@ -52,6 +52,11 @@ const users = [];
 const passport = require('passport');
 const GoogleStrategy = require('passport-google-oauth20').Strategy;
 const FacebookStrategy = require('passport-facebook').Strategy;
+
+// Add OpenAI shim for Node.js environment
+if (typeof Request === 'undefined' || typeof Response === 'undefined') {
+    require('openai/shims/node');
+}
 const OpenAI = require('openai');
 const localGenerator = require('./local-story-generator');
 
@@ -1099,17 +1104,12 @@ app.get('/', (req, res) => {
             if (!user) {
                 return res.redirect('/login');
             }
-            // If cookie token exists, inject it into localStorage for client-side use
-            if (req.cookies.token) {
-                const tokenScript = `
-                <script>
-                    (function() {
-                        localStorage.setItem('token', '${req.cookies.token}');
-                        window.__authToken = '${req.cookies.token}';
-                    })();
-                </script>`;
-                html = html.replace('<head>', '<head>' + tokenScript);
-            }
+            // Serve authenticated page without token injection for security
+            const welcomeMessage = `
+            <div style="background: #e8f5e8; padding: 10px; margin: 10px; border-radius: 5px;">
+                Welcome, ${user.username}! You are authenticated.
+            </div>`;
+            html = html.replace('</body>', welcomeMessage + '</body>');
             return res.send(html);
         } catch {
             return res.redirect('/login');
