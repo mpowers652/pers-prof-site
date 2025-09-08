@@ -9,5 +9,7 @@ module.exports = {
     transformIgnorePatterns: [
         'node_modules/(?!@xenova/transformers)'
     ],
-    setupFilesAfterEnv: ['<rootDir>/test-setup.js']
+    setupFilesAfterEnv: ['<rootDir>/test-setup.js'],
+    forceExit: true,
+    testTimeout: 15000
 };

@@ -4,11 +4,8 @@ function isTokenExpired(token) {
     try {
         const payload = JSON.parse(atob(token.split('.')[1]));
         const now = Math.floor(Date.now() / 1000);
-        console.log('Token validation - now:', now, 'exp:', payload.exp, 'iat:', payload.iat);
-        console.log('Checks - expired:', now >= payload.exp, 'future iat:', payload.iat && now < payload.iat);
         return now >= payload.exp || (payload.iat && now < payload.iat);
     } catch (e) {
-        console.log('Token parsing error:', e);
         return true;
     }
 }
@@ -50,7 +47,8 @@ async function refreshTokenIfNeeded() {
         try {
             const response = await fetch('/auth/refresh', {
                 method: 'POST',
-                headers: { 'Authorization': `Bearer ${token}` }
+                headers: { 'Authorization': `Bearer ${token}` },
+                _isAuthRequest: true
             });
             
             if (response.ok) {
@@ -120,7 +118,16 @@ function startTokenRefreshTimer() {
     }, 5 * 60 * 1000); // Check every 5 minutes
 }
 
-// Activity event listeners
+// Auth response handler
+function handleAuthResponse(response) {
+    if (response.status === 401) {
+        clearExpiredToken();
+        return { requiresLogin: true, redirectTo: '/login' };
+    }
+    return { requiresLogin: false };
+}
+
+// Activity event listeners - always register
 ['mousedown', 'mousemove', 'keypress', 'scroll', 'touchstart', 'click'].forEach(event => {
     document.addEventListener(event, trackActivity, { passive: true });
 });
@@ -129,8 +136,9 @@ function startTokenRefreshTimer() {
 document.addEventListener('visibilitychange', async () => {
     if (!document.hidden) {
         if (clearExpiredToken()) {
-            if (!window.location.pathname.includes('/login')) {
-                window.location.href = '/login';
+            const authResult = handleAuthResponse({ status: 401 });
+            if (authResult.requiresLogin && !window.location.pathname.includes('/login')) {
+                window.location.href = authResult.redirectTo;
             }
         } else {
             await refreshTokenIfNeeded();
@@ -146,7 +154,6 @@ if (getToken()) {
 // Client-side authentication helper
 function setAuthHeaders() {
     clearExpiredToken();
-    refreshTokenIfNeeded();
     const token = getToken();
     const userType = localStorage.getItem('userType');
     
@@ -162,21 +169,20 @@ function setAuthHeaders() {
 // Add auth headers to all fetch requests
 const originalFetch = window.fetch;
 window.fetch = function(url, options = {}) {
-    options.headers = { ...options.headers, ...setAuthHeaders() };
+    // Skip auth headers for internal auth refresh requests to prevent recursion
+    if (!options._isAuthRequest) {
+        options.headers = { ...options.headers, ...setAuthHeaders() };
+    }
     return originalFetch(url, options).then(response => {
-        if (response.status === 401) {
-            clearExpiredToken();
-            if (!window.location.pathname.includes('/login')) {
-                window.location.href = '/login';
-            }
+        const authResult = handleAuthResponse(response);
+        if (authResult.requiresLogin && !window.location.pathname.includes('/login')) {
+            window.location.href = authResult.redirectTo;
         }
         return response;
     }).catch(error => {
-        if (error.status === 401) {
-            clearExpiredToken();
-            if (!window.location.pathname.includes('/login')) {
-                window.location.href = '/login';
-            }
+        const authResult = handleAuthResponse(error);
+        if (authResult.requiresLogin && !window.location.pathname.includes('/login')) {
+            window.location.href = authResult.redirectTo;
         }
         throw error;
     });
@@ -197,6 +203,7 @@ if (typeof window !== 'undefined') {
     window.setAuthHeaders = setAuthHeaders;
     window.trackActivity = trackActivity;
     window.startTokenRefreshTimer = startTokenRefreshTimer;
+    window.handleAuthResponse = handleAuthResponse;
 }
 
 // Make functions globally available for Node.js testing
@@ -211,6 +218,7 @@ if (typeof global !== 'undefined') {
     global.setAuthHeaders = setAuthHeaders;
     global.trackActivity = trackActivity;
     global.startTokenRefreshTimer = startTokenRefreshTimer;
+    global.handleAuthResponse = handleAuthResponse;
     
     // Expose variables with getters/setters for testing
     Object.defineProperty(global, 'lastActivity', {
@@ -227,5 +235,5 @@ if (typeof global !== 'undefined') {
 // Only start token management if token exists
 if (getToken()) {
     startTokenRefreshTimer();
-    refreshTokenIfNeeded();
+    // Don't call refreshTokenIfNeeded() synchronously during module load
 }

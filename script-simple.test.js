@@ -3,15 +3,29 @@
  */
 
 describe('Script Module Simple Tests', () => {
+    let mockQuerySelectorAll, mockQuerySelector, mockCreateElement;
+    
+    beforeAll(() => {
+        // Clear any existing cache
+        delete require.cache[require.resolve('./script.js')];
+    });
+    
     beforeEach(() => {
-        // Mock DOM methods
-        document.querySelectorAll = jest.fn(() => []);
-        document.querySelector = jest.fn(() => null);
-        document.createElement = jest.fn(() => ({
+        // Reset all modules
+        jest.resetModules();
+        
+        // Set up fresh mocks for each test
+        mockQuerySelectorAll = jest.fn(() => []);
+        mockQuerySelector = jest.fn(() => null);
+        mockCreateElement = jest.fn(() => ({
             innerHTML: '',
             appendChild: jest.fn(),
             className: ''
         }));
+        
+        document.querySelectorAll = mockQuerySelectorAll;
+        document.querySelector = mockQuerySelector;
+        document.createElement = mockCreateElement;
         
         global.fetch = jest.fn();
     });
@@ -21,6 +35,8 @@ describe('Script Module Simple Tests', () => {
     });
 
     test('checkServiceStatus function behavior', async () => {
+        require('./script.js');
+        
         // Mock successful response
         global.fetch.mockResolvedValue({ ok: true });
         
@@ -33,6 +49,6 @@ describe('Script Module Simple Tests', () => {
         require('./script.js');
         
         // Verify DOM methods were called during script execution
-        expect(document.querySelectorAll).toHaveBeenCalled();
+        expect(mockQuerySelectorAll).toHaveBeenCalled();
     });
 });

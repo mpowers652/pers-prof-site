@@ -5,7 +5,7 @@ WORKDIR /usr/src/app
 # Copy package files
 COPY package*.json ./
 
-# Install dependencies
+# Install dependencies including bcrypt for admin user management
 RUN npm install
 
 # Copy source code (excluding .env for security)

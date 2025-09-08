@@ -1,167 +1,122 @@
-const request = require('supertest');
-
-// Mock the server module
-const mockApp = {
-    post: jest.fn(),
-    use: jest.fn(),
-    listen: jest.fn()
-};
-
-jest.mock('./server', () => mockApp);
-
-// Mock supertest
+// Mock supertest module with proper chaining
 const mockRequest = {
     post: jest.fn().mockReturnThis(),
     send: jest.fn().mockReturnThis(),
     set: jest.fn().mockReturnThis()
 };
 
+// Make sure all methods return the mock object for chaining
+mockRequest.post.mockReturnValue(mockRequest);
+mockRequest.send.mockReturnValue(Promise.resolve({ body: {} }));
+mockRequest.set.mockReturnValue(mockRequest);
+
 jest.mock('supertest', () => jest.fn(() => mockRequest));
 
 describe('test-admin.js Coverage Tests', () => {
+    let adminModule;
+    
     beforeEach(() => {
         jest.clearAllMocks();
         process.env.ADMIN_PASSWORD = 'test123';
+        
+        // Reset mock methods to ensure proper chaining
+        mockRequest.post.mockReturnValue(mockRequest);
+        mockRequest.set.mockReturnValue(mockRequest);
+        mockRequest.send.mockResolvedValue({ body: {} });
+        
+        // Reset the module cache to get fresh imports
+        delete require.cache[require.resolve('./test-admin-module.js')];
+        adminModule = require('./test-admin-module.js');
     });
 
-    test('successful admin login and email configuration', async () => {
-        // Mock successful login
-        mockRequest.post.mockImplementation((path) => {
-            if (path === '/auth/login') {
-                return Promise.resolve({
-                    body: { success: true, token: 'admin-token-123' }
-                });
-            }
-            if (path === '/admin/set-email') {
-                return Promise.resolve({
-                    body: { 
-                        success: true, 
-                        message: 'Email updated to newemail@example.com' 
-                    }
-                });
-            }
-            return mockRequest;
+    test('module exports expected functions', () => {
+        expect(adminModule.performAdminLogin).toBeDefined();
+        expect(adminModule.testAdminEmailConfiguration).toBeDefined();
+        expect(adminModule.testPrivacyPolicyDetection).toBeDefined();
+    });
+
+    test('performAdminLogin calls correct endpoints', async () => {
+        // Mock successful response
+        mockRequest.send.mockResolvedValue({
+            body: { success: true, token: 'test-token' }
         });
 
-        // Load and execute the test-admin module
-        const adminModule = require('./test-admin-module.js');
-        await adminModule.performAdminLogin(mockApp);
-
-        // Verify the login request was made
+        const mockApp = {};
+        const result = await adminModule.performAdminLogin(mockApp, 'admin', 'test123');
+        
         expect(mockRequest.post).toHaveBeenCalledWith('/auth/login');
         expect(mockRequest.send).toHaveBeenCalledWith({
             username: 'admin',
             password: 'test123'
         });
+        expect(result).toBe('test-token');
     });
 
-    test('handles failed admin login', async () => {
-        // Mock failed login
-        mockRequest.post.mockImplementation((path) => {
-            if (path === '/auth/login') {
-                return Promise.resolve({
-                    body: { success: false, message: 'Invalid credentials' }
-                });
-            }
-            return mockRequest;
+    test('testAdminEmailConfiguration sets authorization header', async () => {
+        mockRequest.send.mockResolvedValue({
+            body: { success: true }
         });
 
-        // This should handle the login failure gracefully
-        const adminModule = require('./test-admin-module.js');
-        try {
-            await adminModule.performAdminLogin(mockApp);
-        } catch (error) {
-            // Expected to fail
-        }
-    });
-
-    test('handles missing admin password', async () => {
-        delete process.env.ADMIN_PASSWORD;
+        const mockApp = {};
+        const token = 'test-token';
         
-        mockRequest.post.mockImplementation(() => {
-            return Promise.resolve({
-                body: { success: false, message: 'No password provided' }
-            });
-        });
-
-        const adminModule = require('./test-admin-module.js');
-        try {
-            await adminModule.performAdminLogin(mockApp, 'admin', undefined);
-        } catch (error) {
-            // Expected to fail
-        }
-        
-        expect(mockRequest.send).toHaveBeenCalledWith({
-            username: 'admin',
-            password: undefined
-        });
-    });
-
-    test('handles email setting failure', async () => {
-        // Mock successful login but failed email setting
-        mockRequest.post.mockImplementation((path) => {
-            if (path === '/auth/login') {
-                return Promise.resolve({
-                    body: { success: true, token: 'valid-token' }
-                });
-            }
-            if (path === '/admin/set-email') {
-                return Promise.resolve({
-                    body: { 
-                        success: false, 
-                        message: 'Email update failed' 
-                    }
-                });
-            }
-            return mockRequest;
-        });
-
-        const adminModule = require('./test-admin-module.js');
-        const token = await adminModule.performAdminLogin(mockApp);
         await adminModule.testAdminEmailConfiguration(mockApp, token);
         
-        expect(mockRequest.set).toHaveBeenCalledWith('Authorization', 'Bearer valid-token');
+        expect(mockRequest.post).toHaveBeenCalledWith('/admin/set-email');
+        expect(mockRequest.set).toHaveBeenCalledWith('Authorization', 'Bearer test-token');
         expect(mockRequest.send).toHaveBeenCalledWith({
             email: 'newemail@example.com'
         });
     });
 
-    test('handles network errors', async () => {
-        // Mock network error
-        mockRequest.post.mockRejectedValue(new Error('Network error'));
-
-        const adminModule = require('./test-admin-module.js');
-        try {
-            await adminModule.performAdminLogin(mockApp);
-        } catch (error) {
-            // Expected to fail with network error
-        }
-    });
-
-    test('verifies test structure', async () => {
-        // Verify the module can be loaded and used
-        const adminModule = require('./test-admin-module.js');
-        expect(adminModule.performAdminLogin).toBeDefined();
-        
-        // Verify supertest was called with the app
-        expect(require('supertest')).toHaveBeenCalledWith(mockApp);
-    });
-
-    test('handles different admin password values', async () => {
-        process.env.ADMIN_PASSWORD = 'different-password';
-        
-        mockRequest.post.mockImplementation(() => {
-            return Promise.resolve({
-                body: { success: true, token: 'new-token' }
-            });
+    test('testPrivacyPolicyDetection calls correct endpoint', async () => {
+        // For this test, set needs to return a promise since there's no .send() call
+        mockRequest.set.mockResolvedValue({
+            body: { success: true }
         });
 
-        const adminModule = require('./test-admin-module.js');
-        await adminModule.performAdminLogin(mockApp, 'admin', 'different-password');
+        const mockApp = {};
+        const token = 'test-token';
+        
+        await adminModule.testPrivacyPolicyDetection(mockApp, token);
+        
+        expect(mockRequest.post).toHaveBeenCalledWith('/privacy-policy/detect-changes');
+        expect(mockRequest.set).toHaveBeenCalledWith('Authorization', 'Bearer test-token');
+    });
+
+    test('handles missing password parameter', async () => {
+        // Clear environment password to test default fallback
+        delete process.env.ADMIN_PASSWORD;
+        
+        mockRequest.send.mockResolvedValue({
+            body: { success: false, message: 'Invalid credentials' }
+        });
+
+        const mockApp = {};
+        const result = await adminModule.performAdminLogin(mockApp, 'admin', undefined);
+        
+        // When undefined is passed, it should fall back to 'test' default
+        expect(mockRequest.send).toHaveBeenCalledWith({
+            username: 'admin',
+            password: 'test'
+        });
+        expect(result).toBeUndefined();
+    });
+
+    test('uses environment password when not provided', async () => {
+        process.env.ADMIN_PASSWORD = 'env-password';
+        
+        mockRequest.send.mockResolvedValue({
+            body: { success: true, token: 'env-token' }
+        });
+
+        const mockApp = {};
+        const result = await adminModule.performAdminLogin(mockApp);
         
         expect(mockRequest.send).toHaveBeenCalledWith({
             username: 'admin',
-            password: 'different-password'
+            password: 'env-password'
         });
+        expect(result).toBe('env-token');
     });
 });

@@ -1,25 +1,25 @@
 // Mock mathjs
+const mockEvaluate = jest.fn();
 jest.mock('mathjs', () => ({
-    evaluate: jest.fn()
+    evaluate: mockEvaluate
 }));
-
-const { evaluate } = require('mathjs');
 
 describe('Test Eval Simple', () => {
     beforeEach(() => {
         jest.clearAllMocks();
+        jest.resetModules();
         console.error = jest.fn();
         console.log = jest.fn();
     });
 
     test('loads test_eval module', () => {
-        evaluate.mockReturnValue(8);
+        mockEvaluate.mockReturnValue(8);
         expect(() => require('./test_eval.js')).not.toThrow();
     });
 
     test('mathjs evaluate is called', () => {
-        evaluate.mockReturnValue(42);
+        mockEvaluate.mockReturnValue(42);
         require('./test_eval.js');
-        expect(evaluate).toHaveBeenCalled();
+        expect(mockEvaluate).toHaveBeenCalled();
     });
 });

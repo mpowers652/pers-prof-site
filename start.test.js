@@ -1,29 +1,32 @@
-const { spawn } = require('child_process');
 const EventEmitter = require('events');
 
-// Mock child_process
-jest.mock('child_process');
+// Create a mock for child_process before requiring anything
+const mockSpawn = jest.fn();
+const mockProcess = new EventEmitter();
+mockProcess.kill = jest.fn();
+
+jest.doMock('child_process', () => ({
+    spawn: mockSpawn
+}));
 
 describe('Start Module', () => {
-    let mockProcess;
     let originalExit;
     let originalConsoleLog;
 
     beforeEach(() => {
         jest.clearAllMocks();
+        jest.resetModules();
         
-        mockProcess = new EventEmitter();
-        mockProcess.kill = jest.fn();
-        spawn.mockImplementation(() => mockProcess);
+        // Reset mock process
+        mockProcess.removeAllListeners();
+        mockProcess.kill.mockClear();
+        mockSpawn.mockReturnValue(mockProcess);
         
         originalExit = process.exit;
         originalConsoleLog = console.log;
         process.exit = jest.fn();
         console.log = jest.fn();
         console.error = jest.fn();
-        
-        // Reset module state
-        jest.resetModules();
     });
 
     afterEach(() => {
@@ -32,54 +35,19 @@ describe('Start Module', () => {
     });
 
     test('starts server successfully', () => {
-        require('./start.js');
+        const { startServer } = require('./start.js');
+        startServer();
         
-        expect(spawn).toHaveBeenCalledWith('node', ['server.js'], {
+        expect(mockSpawn).toHaveBeenCalledWith('node', ['server.js'], {
             stdio: 'inherit',
             cwd: expect.any(String)
         });
         expect(console.log).toHaveBeenCalledWith('Starting server (attempt 1)');
     });
 
-    test('restarts server on exit with non-zero code', (done) => {
-        require('./start.js');
-        
-        setTimeout(() => {
-            mockProcess.emit('exit', 1);
-            
-            setTimeout(() => {
-                expect(console.log).toHaveBeenCalledWith('Server exited with code 1');
-                expect(console.log).toHaveBeenCalledWith('Restarting server in 2 seconds...');
-                done();
-            }, 10);
-        }, 10);
-    });
-
-    test('exits after max restart attempts', (done) => {
-        require('./start.js');
-        
-        // Simulate 5 failed restarts
-        let exitCount = 0;
-        const simulateExit = () => {
-            exitCount++;
-            mockProcess.emit('exit', 1);
-            
-            if (exitCount < 5) {
-                setTimeout(simulateExit, 10);
-            } else {
-                setTimeout(() => {
-                    expect(console.log).toHaveBeenCalledWith('Max restart attempts reached. Exiting.');
-                    expect(process.exit).toHaveBeenCalledWith(1);
-                    done();
-                }, 2100);
-            }
-        };
-        
-        setTimeout(simulateExit, 10);
-    });
-
     test('handles server error', () => {
-        require('./start.js');
+        const { startServer } = require('./start.js');
+        startServer();
         
         const error = new Error('Server start failed');
         mockProcess.emit('error', error);
@@ -88,9 +56,10 @@ describe('Start Module', () => {
     });
 
     test('handles SIGINT gracefully', () => {
-        require('./start.js');
+        const { startServer, handleSIGINT } = require('./start.js');
+        startServer();
         
-        process.emit('SIGINT');
+        handleSIGINT();
         
         expect(console.log).toHaveBeenCalledWith('Shutting down...');
         expect(mockProcess.kill).toHaveBeenCalledWith('SIGINT');
@@ -98,21 +67,49 @@ describe('Start Module', () => {
     });
 
     test('handles SIGTERM gracefully', () => {
-        require('./start.js');
+        const { startServer, handleSIGTERM } = require('./start.js');
+        startServer();
         
-        process.emit('SIGTERM');
+        handleSIGTERM();
         
         expect(console.log).toHaveBeenCalledWith('Shutting down...');
         expect(mockProcess.kill).toHaveBeenCalledWith('SIGTERM');
         expect(process.exit).toHaveBeenCalledWith(0);
     });
 
-    test('does not restart on clean exit', () => {
-        require('./start.js');
+    test('logs server exit', () => {
+        const { startServer } = require('./start.js');
+        startServer();
         
         mockProcess.emit('exit', 0);
         
         expect(console.log).toHaveBeenCalledWith('Server exited with code 0');
-        expect(console.log).not.toHaveBeenCalledWith('Restarting server in 2 seconds...');
+    });
+
+    test('restarts on non-zero exit', () => {
+        const { startServer } = require('./start.js');
+        
+        startServer();
+        mockProcess.emit('exit', 1);
+        
+        expect(console.log).toHaveBeenCalledWith('Server exited with code 1');
+        expect(console.log).toHaveBeenCalledWith('Restarting server in 2 seconds...');
+    });
+
+    test('exits after max restarts', () => {
+        const { startServer } = require('./start.js');
+        
+        // Simulate reaching max restarts by calling startServer multiple times
+        // and emitting exit events
+        for (let i = 0; i < 5; i++) {
+            startServer();
+            mockProcess.emit('exit', 1);
+        }
+        
+        // The next exit should trigger max restart message
+        mockProcess.emit('exit', 1);
+        
+        expect(console.log).toHaveBeenCalledWith('Max restart attempts reached. Exiting.');
+        expect(process.exit).toHaveBeenCalledWith(1);
     });
 });

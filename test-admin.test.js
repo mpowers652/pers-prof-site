@@ -1,84 +1,62 @@
-// Mock supertest and server
-const mockRequest = {
-    post: jest.fn().mockReturnThis(),
-    send: jest.fn().mockReturnThis(),
-    set: jest.fn().mockReturnThis()
-};
-
-const mockApp = {};
-
-jest.mock('supertest', () => jest.fn(() => mockRequest));
-jest.mock('./server', () => mockApp);
+const request = require('supertest');
+const app = require('./server');
+const bcrypt = require('bcrypt');
 
 describe('Test Admin Module', () => {
-    beforeEach(() => {
-        jest.clearAllMocks();
-        process.env.ADMIN_PASSWORD = 'test123';
+    beforeAll(async () => {
+        // Manually create admin user for tests
+        const hashedPassword = bcrypt.hashSync('test', 10);
+        app.users.push({
+            id: 1,
+            username: 'admin',
+            email: 'admin@test.com',
+            password: hashedPassword,
+            role: 'admin',
+            subscription: 'full'
+        });
     });
 
+
+
     test('admin email configuration test setup', async () => {
-        // Mock successful login response
-        mockRequest.post.mockImplementation((path) => {
-            if (path === '/auth/login') {
-                return Promise.resolve({
-                    body: { success: true, token: 'admin-token' }
-                });
-            }
-            if (path === '/admin/set-email') {
-                return Promise.resolve({
-                    body: { 
-                        success: true, 
-                        message: 'Email set to newemail@example.com' 
-                    }
-                });
-            }
-            return mockRequest;
-        });
+        // Test admin login functionality
+        const loginReq = request(app);
+        const response = await loginReq
+            .post('/auth/login')
+            .send({ username: 'admin', password: 'test' });
 
-        const adminModule = require('./test-admin-module.js');
-        await adminModule.performAdminLogin(mockApp);
-
-        expect(mockRequest.post).toHaveBeenCalledWith('/auth/login');
-        expect(mockRequest.send).toHaveBeenCalledWith({
-            username: 'admin',
-            password: 'test123'
-        });
+        expect(response.body.success).toBe(true);
+        expect(response.body.token).toBeDefined();
     });
 
     test('handles admin login failure', async () => {
-        mockRequest.post.mockImplementation(() => {
-            return Promise.resolve({
-                body: { success: false, message: 'Invalid credentials' }
-            });
-        });
+        const loginReq = request(app);
+        const response = await loginReq
+            .post('/auth/login')
+            .send({ username: 'admin', password: 'wrongpassword' });
 
-        const adminModule = require('./test-admin-module.js');
-        try {
-            await adminModule.performAdminLogin(mockApp);
-        } catch (error) {
-            // Expected to fail
-        }
-
-        expect(mockRequest.post).toHaveBeenCalled();
+        expect(response.body.success).toBe(false);
+        expect(response.body.message).toBe('Invalid credentials');
     });
 
     test('handles set email request', async () => {
-        mockRequest.post.mockImplementation((path) => {
-            if (path === '/auth/login') {
-                return Promise.resolve({
-                    body: { success: true, token: 'valid-token' }
-                });
-            }
-            return mockRequest;
-        });
+        // First login to get token
+        const loginReq = request(app);
+        const loginResponse = await loginReq
+            .post('/auth/login')
+            .send({ username: 'admin', password: 'test' });
 
-        const adminModule = require('./test-admin-module.js');
-        const token = await adminModule.performAdminLogin(mockApp);
-        await adminModule.testAdminEmailConfiguration(mockApp, token);
+        expect(loginResponse.body.success).toBe(true);
+        const token = loginResponse.body.token;
 
-        expect(mockRequest.set).toHaveBeenCalledWith('Authorization', 'Bearer valid-token');
-        expect(mockRequest.send).toHaveBeenCalledWith({
-            email: 'newemail@example.com'
-        });
+        // Test admin email configuration
+        const emailReq = request(app);
+        const setEmailResponse = await emailReq
+            .post('/admin/set-email')
+            .set('Authorization', `Bearer ${token}`)
+            .send({ email: 'newemail@example.com' });
+
+        expect(setEmailResponse.body.success).toBe(true);
+        expect(setEmailResponse.body.message).toBe('Admin email set to newemail@example.com');
     });
 });

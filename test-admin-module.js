@@ -1,7 +1,7 @@
 const request = require('supertest');
 
 // Admin test functions that can be called from test files
-async function performAdminLogin(app, username = 'admin', password = 'test123') {
+async function performAdminLogin(app, username = 'admin', password = process.env.ADMIN_PASSWORD || 'test') {
     const loginResponse = await request(app)
         .post('/auth/login')
         .send({ username, password });

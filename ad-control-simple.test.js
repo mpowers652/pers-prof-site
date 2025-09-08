@@ -4,6 +4,9 @@
 
 describe('Ad Control Module Simple Tests', () => {
     beforeEach(() => {
+        // Clear module cache
+        jest.resetModules();
+        
         // Mock localStorage
         Object.defineProperty(window, 'localStorage', {
             value: {
@@ -42,7 +45,10 @@ describe('Ad Control Module Simple Tests', () => {
     });
 
     test('window event listener is set up', () => {
+        // Require the module
         require('./ad-control.js');
-        expect(window.addEventListener).toHaveBeenCalled();
+        
+        // Check that addEventListener was called with 'load' event
+        expect(window.addEventListener).toHaveBeenCalledWith('load', expect.any(Function));
     });
 });

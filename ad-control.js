@@ -25,7 +25,9 @@ async function checkAdVisibility() {
 }
 
 // Check ad visibility on page load
-window.addEventListener('load', checkAdVisibility);
+if (typeof window !== 'undefined') {
+    window.addEventListener('load', checkAdVisibility);
+}
 
 // Export for testing
 if (typeof module !== 'undefined' && module.exports) {

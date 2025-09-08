@@ -1,3 +1,8 @@
+// Polyfill for setImmediate to fix Google Cloud library issues
+if (typeof setImmediate === 'undefined') {
+    global.setImmediate = (fn, ...args) => setTimeout(fn, 0, ...args);
+}
+
 const request = require('supertest');
 const app = require('./server');
 const jwt = require('jsonwebtoken');
