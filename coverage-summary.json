@@ -1,0 +1,31 @@
+{
+  "timestamp": "2025-09-08T03:00:55.173Z",
+  "file": "server.js",
+  "coverage": {
+    "statements": {
+      "total": 638,
+      "covered": 495,
+      "percentage": "77.59"
+    },
+    "functions": {
+      "total": 88,
+      "covered": 61,
+      "percentage": "69.32"
+    },
+    "branches": {
+      "total": 319,
+      "covered": 229,
+      "percentage": "71.79"
+    },
+    "lines": {
+      "total": 638,
+      "covered": 495,
+      "percentage": "77.59"
+    }
+  },
+  "testsAdded": 48,
+  "newTestFiles": [
+    "server-enhanced-coverage.test.js (29 tests)",
+    "server-final-coverage.test.js (19 tests)"
+  ]
+}

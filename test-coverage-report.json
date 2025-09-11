@@ -1,41 +1,6 @@
 [
   {
-    "file": "C:\\Users\\carto\\OneDrive\\Documents\\Github\\personal-professional-website - Copy\\ad-control.js",
-    "lines": 1,
-    "coverage": "1 lines covered"
-  },
-  {
-    "file": "C:\\Users\\carto\\OneDrive\\Documents\\Github\\personal-professional-website - Copy\\auth.js",
-    "lines": 1,
-    "coverage": "1 lines covered"
-  },
-  {
-    "file": "C:\\Users\\carto\\OneDrive\\Documents\\Github\\personal-professional-website - Copy\\local-story-generator.js",
-    "lines": 1,
-    "coverage": "1 lines covered"
-  },
-  {
-    "file": "C:\\Users\\carto\\OneDrive\\Documents\\Github\\personal-professional-website - Copy\\script.js",
-    "lines": 1,
-    "coverage": "1 lines covered"
-  },
-  {
     "file": "C:\\Users\\carto\\OneDrive\\Documents\\Github\\personal-professional-website - Copy\\server.js",
-    "lines": 1,
-    "coverage": "1 lines covered"
-  },
-  {
-    "file": "C:\\Users\\carto\\OneDrive\\Documents\\Github\\personal-professional-website - Copy\\simple-refresh-test.js",
-    "lines": 1,
-    "coverage": "1 lines covered"
-  },
-  {
-    "file": "C:\\Users\\carto\\OneDrive\\Documents\\Github\\personal-professional-website - Copy\\start.js",
-    "lines": 1,
-    "coverage": "1 lines covered"
-  },
-  {
-    "file": "C:\\Users\\carto\\OneDrive\\Documents\\Github\\personal-professional-website - Copy\\test_eval.js",
     "lines": 1,
     "coverage": "1 lines covered"
   }
