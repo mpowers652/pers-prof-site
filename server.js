@@ -1221,43 +1221,23 @@ app.post('/privacy-policy/detect-changes', express.json(), async (req, res) => {
 
 
 // Root route serves main page
-app.get('/', (req, res) => {
-    // Support guest mode via header or query param
-    const isGuest = req.headers['x-user-type'] === 'guest' || req.query.guest === 'true';
-    // Security: if a token appears in the URL query, force redirect to login instead of treating it as auth
-    if (req.query && req.query.token) {
-        return res.redirect('/login');
-    }
-    if (isGuest) {
-        // Serve index as guest (no user injected) and include guest welcome copy expected by tests
-        let html = fs.readFileSync(path.join(__dirname, 'index.html'), 'utf8');
-        const guestBanner = `<div id="guest-welcome">Welcome, Guest! Please log in to access more features.</div>`;
-        html = html.replace('<div id="root"></div>', `<div id="root"></div>${guestBanner}`);
-        return res.status(200).send(html);
-    }
 
-    // Accept Authorization header or cookie/session token
-    const token = req.headers.authorization?.split(' ')[1] || req.cookies.token || req.session?.authToken;
-    if (!token) return res.redirect('/login');
+// SPA fallback: serve index.html for all non-API, non-static GET routes
+const SPA_ROUTES = ['/', '/login', '/register', '/contact', '/math', '/fft-visualizer', '/story-generator', '/subscription', '/privacy-policy', '/request-api-key'];
+SPA_ROUTES.forEach(route => {
+    app.get(route, (req, res, next) => {
+        // Only handle if not an API or static file
+        if (req.path.startsWith('/api') || req.path.startsWith('/auth') || req.path.startsWith('/admin')) return next();
+        res.sendFile(path.join(__dirname, 'index.html'));
+    });
+});
 
-    try {
-        const decoded = jwt.verify(token, 'secret');
-        const user = users.find(u => u.id === decoded.id);
-        if (!user) return res.redirect('/login');
-
-        // Use ejs.renderFile so tests can mock ejs.renderFile (3-arg signature)
-        require('ejs').renderFile(path.join(__dirname, 'index.html'), {}, (err, html) => {
-            if (err) return res.status(500).send('Server error');
-            const userScript = `<script>window.currentUser = ${JSON.stringify(user)};</script>`;
-            // Insert visible welcome banner so tests that search for 'Welcome' in HTML succeed
-            const welcomeBanner = `<div id="welcome-banner">Welcome, ${user.username}!</div>`;
-            html = html.replace('</head>', userScript + '</head>');
-            html = html.replace('<div id="root"></div>', `<div id="root"></div>${welcomeBanner}`);
-            return res.status(200).send(html);
-        });
-    } catch (error) {
-        return res.redirect('/login');
-    }
+// Catch-all fallback for client-side routing (after all other routes)
+app.get('*', (req, res, next) => {
+    if (req.method !== 'GET') return next();
+    if (req.path.startsWith('/api') || req.path.startsWith('/auth') || req.path.startsWith('/admin')) return next();
+    // If the requested path matches an existing static file, let express.static handle it earlier.
+    res.sendFile(path.join(__dirname, 'index.html'));
 });
 
 
