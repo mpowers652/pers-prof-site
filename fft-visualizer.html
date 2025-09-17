@@ -130,6 +130,9 @@
                 canvas = document.getElementById('canvas');
                 ctx = canvas.getContext('2d');
                 
+                // Create master window
+                createMasterWindow();
+                
                 isRunning = true;
                 document.getElementById('startBtn').textContent = 'Stop';
                 
@@ -180,9 +183,51 @@
                 document.getElementById('downloadBtn').disabled = false;
             }
             
+            // Remove master window
+            const masterWindow = document.getElementById('masterWindow');
+            if (masterWindow) {
+                masterWindow.remove();
+            }
+            
             isRunning = false;
             document.getElementById('startBtn').textContent = 'Start Microphone';
             ctx.clearRect(0, 0, canvas.width, canvas.height);
+        }
+
+        function createMasterWindow() {
+            const selectedRatio = document.querySelector('input[name="aspectRatio"]:checked').value;
+            const masterWindow = document.createElement('div');
+            masterWindow.id = 'masterWindow';
+            masterWindow.style.position = 'fixed';
+            masterWindow.style.top = '50px';
+            masterWindow.style.left = '50px';
+            masterWindow.style.border = '2px solid #333';
+            masterWindow.style.backgroundColor = '#000';
+            masterWindow.style.zIndex = '1000';
+            
+            if (selectedRatio === '9:16') {
+                masterWindow.style.width = '360px';
+                masterWindow.style.height = '640px';
+                masterWindow.innerHTML = `
+                    <div style="height: 50%; border-bottom: 1px solid #666; display: flex; align-items: center; justify-content: center; background: #222;">
+                        <div style="width: 100px; height: 100px; border-radius: 50%; background: #666; display: flex; align-items: center; justify-content: center; color: white;">Profile</div>
+                    </div>
+                    <div id="vizSection" style="height: 50%;"></div>
+                `;
+            } else {
+                masterWindow.style.width = '640px';
+                masterWindow.style.height = '360px';
+                masterWindow.innerHTML = `
+                    <div style="display: flex; height: 100%;">
+                        <div id="vizSection" style="width: 50%; border-right: 1px solid #666;"></div>
+                        <div style="width: 50%; display: flex; align-items: center; justify-content: center; background: #222;">
+                            <div style="width: 100px; height: 100px; border-radius: 50%; background: #666; display: flex; align-items: center; justify-content: center; color: white;">Profile</div>
+                        </div>
+                    </div>
+                `;
+            }
+            
+            document.body.appendChild(masterWindow);
         }
 
         function draw() {
@@ -197,61 +242,15 @@
             
             let barHeight;
             let x = 0;
+            const barWidth = (canvas.width / dataArray.length) * 2.5;
             
-            const selectedRatio = document.querySelector('input[name="aspectRatio"]:checked').value;
-            
-            if (selectedRatio === '9:16') {
-                // Portrait: visualization in bottom half
-                const barWidth = (canvas.width / dataArray.length) * 2.5;
-                for (const value of dataArray) {
-                    barHeight = value * 1.5;
-                    
-                    ctx.fillStyle = `rgb(${barHeight + 100}, 50, 50)`;
-                    ctx.fillRect(x, canvas.height - barHeight / 4, barWidth, barHeight / 4);
-                    
-                    x += barWidth + 1;
-                }
+            for (const value of dataArray) {
+                barHeight = value / 255 * canvas.height;
                 
-                // Add profile picture in top half
-                const savedPicture = localStorage.getItem('profilePicture');
-                if (savedPicture) {
-                    const img = new Image();
-                    img.onload = function() {
-                        const width = canvas.width;
-                        const height = canvas.height / 2;
-                        const x = 0;
-                        const y = 0;
-                        ctx.drawImage(img, x, y, width, height);
-                    };
-                    img.src = savedPicture;
-                }
-            } else {
-                // Landscape: visualization on left, profile on right
-                const vizWidth = canvas.width * 0.5;
-                const barWidth = (vizWidth / dataArray.length);
-
-                for (const value of dataArray) {
-                    barHeight = value * 1.5;
-                    
-                    ctx.fillStyle = `rgb(${barHeight + 100}, 50, 50)`;
-                    ctx.fillRect(x, canvas.height - barHeight / 2, barWidth, barHeight / 2);
-
-                    x += barWidth + 1;
-                }
+                ctx.fillStyle = `rgb(${barHeight + 100}, 50, 50)`;
+                ctx.fillRect(x, canvas.height - barHeight, barWidth, barHeight);
                 
-                // Add profile picture on right side
-                const savedPicture = localStorage.getItem('profilePicture');
-                if (savedPicture) {
-                    const img = new Image();
-                    img.onload = function() {
-                        const width = canvas.width / 2;
-                        const height = canvas.height;
-                        const x = canvas.width / 2;
-                        const y = 0;
-                        ctx.drawImage(img, x, y, width, height);
-                    };
-                    img.src = savedPicture;
-                }
+                x += barWidth + 1;
             }
         }
 
@@ -322,7 +321,7 @@
                 canvas.width = 800;
                 canvas.height = 450;
             }
-        }
+        };
         
         // Check subscription and show story generator
         async function checkSubscription() {

@@ -307,7 +307,7 @@ app.post('/story/generate', express.json(), async (req, res) => {
         
         if (user.subscription !== 'full' && user.role !== 'admin') {
             console.log('Story generation - insufficient permissions');
-            return res.status(403).json({ error: 'Full subscription required' });
+            return res.status(403).json({ error: 'Full subscription required' }).redirect('/subscription');
         }
         
         console.log(`Story generation request from user: ${user.username}, role: ${user.role}`);
@@ -1221,9 +1221,12 @@ app.post('/privacy-policy/detect-changes', express.json(), async (req, res) => {
 
 
 // Root route serves main page
+app.get('/', (req, res) => {
+    res.sendFile(path.join(__dirname, 'index.html'));
+});
 
 // SPA fallback: serve index.html for all non-API, non-static GET routes
-const SPA_ROUTES = ['/', '/login', '/register', '/contact', '/math', '/fft-visualizer', '/story-generator', '/subscription', '/privacy-policy', '/request-api-key'];
+const SPA_ROUTES = ['/login', '/register', '/contact', '/math', '/fft-visualizer', '/story-generator', '/subscription', '/privacy-policy', '/request-api-key'];
 SPA_ROUTES.forEach(route => {
     app.get(route, (req, res, next) => {
         // Only handle if not an API or static file
@@ -1255,33 +1258,7 @@ app.use((err, req, res, next) => {
     next(err);
 });
 
-// Redirect to login for all other GET routes (not POST routes)
-app.get('*', (req, res) => {
-    // If the requested path matches an existing static file, let express.static handle it earlier.
-    // Otherwise redirect unknown GET routes to login to match test expectations.
-    // For SPA paths, if a user exists, serve index with injected user; otherwise redirect to login.
-    const user = getUserFromReq(req);
 
-    // If this looks like a SPA route and user exists, render index with user injected
-    if (user) {
-        try {
-            // Use renderFile (3-arg) so test mocks intercept rendering
-            require('ejs').renderFile(path.join(__dirname, 'index.html'), {}, (err, html) => {
-                if (err) return res.status(500).send('Server error');
-                const userScript = `<script>window.currentUser = ${JSON.stringify(user)};</script>`;
-                const welcomeBanner = `<div id="welcome-banner">Welcome, ${user.username}!</div>`;
-                html = html.replace('</head>', userScript + '</head>');
-                html = html.replace('<div id="root"></div>', `<div id="root"></div>${welcomeBanner}`);
-                return res.status(200).send(html);
-            });
-        } catch (err) {
-            return res.status(500).send('Server error');
-        }
-    }
-
-    // No user detected — redirect to login for unknown GET routes to satisfy tests
-    return res.redirect('/login');
-});
 
 // Development-only helper: upgrade the current authenticated user's subscription to 'full'
 // This route is only enabled when not running in production and helps testing premium-only pages.
