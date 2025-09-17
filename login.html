@@ -23,7 +23,6 @@
                     <form id="loginForm">
                         <input type="text" id="username" placeholder="Username" required>
                         <input type="password" id="password" placeholder="Password" required>
-                        <button type="submit" class="btn">Login</button>
                     </form>
                     <p><a href="/register">Don't have an account? Register</a></p>
                 </div>
@@ -72,8 +71,6 @@
             }(document, 'script', 'facebook-jssdk'));
     </script>
     <script>
-        // Token clearing is now handled by server-side route
-        
         // Check for success parameter and show message
         if (window.location.href.indexOf('success=true') !== -1) {
             // OAuth login successful - redirect to home
@@ -91,37 +88,25 @@
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ username, password }),
-                // Ensure cookies (httpOnly token) set by server are accepted
                 credentials: 'include'
             });
             
             const data = await response.json();
-            console.log('Login response:', data);
             if (data.success) {
-                console.log('Login successful, processing token...');
-                // Verify token is valid JWT before storing
                 if (data.token && data.token.split('.').length === 3) {
                     try {
                         JSON.parse(atob(data.token.split('.')[1]));
-                        // Prefer session-only authentication via httpOnly cookie set by server.
-                        // Do NOT persist token in localStorage or as a readable cookie.
-                        console.log('Login successful; relying on server-set session cookie');
-
-                        // Redirect to home page; server will have set an httpOnly session cookie
-                        // when `credentials: 'include'` was used on the login request.
                         setTimeout(() => {
                             window.location.replace('/');
                         }, 100);
                     } catch (e) {
-                        console.error('Token parsing error:', e);
                         alert('Invalid token received');
+                        console.error('Token parse error:', e);
                     }
                 } else {
-                    console.error('Invalid token format:', data.token);
                     alert('Invalid token format');
                 }
             } else {
-                console.error('Login failed:', data.message);
                 alert(data.message);
             }
         });
@@ -135,9 +120,7 @@
         }
         
         function loginAsGuest() {
-            console.log('Setting userType to guest');
             localStorage.setItem('userType', 'guest');
-            console.log('UserType saved:', localStorage.getItem('userType'));
             window.location.href = '/';
         }
     </script>
