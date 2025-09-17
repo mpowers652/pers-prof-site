@@ -1,0 +1,5 @@
+{
+  // Sort files and show folders compactly for easier navigation in VS Code
+  "explorer.sortOrder": "mixed",
+  "explorer.compactFolders": true
+}

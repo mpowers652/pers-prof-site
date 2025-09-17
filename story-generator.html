@@ -23,7 +23,7 @@
                         <option value="bedtime">Bedtime</option>
                         <option value="custom">Custom...</option>
                     </select>
-                    <input type="text" id="customAdjective" placeholder="Enter custom adjective" style="display:none">
+                    <input type="text" id="customAdjective" placeholder="Enter custom adjective" class="hidden">
                     
                     <select title="word count" id="wordCount">
                         <option value="">Select word count...</option>
@@ -41,13 +41,13 @@
                         <option value="10000">10000</option>
                         <option value="custom">Custom...</option>
                     </select>
-                    <input type="number" id="customWordCount" placeholder="Enter word count" style="display:none">
+                    <input type="number" id="customWordCount" placeholder="Enter word count" class="hidden">
                     
                     <select title="subject" id="subject">
                         <option value="">Select subject...</option>
                         <option value="custom">Custom...</option>
                     </select>
-                    <input type="text" id="customSubject" placeholder="Enter custom subject" style="display:none">
+                    <input type="text" id="customSubject" placeholder="Enter custom subject" class="hidden">
                 </div>
                 <button onclick="generateStory()" class="btn">Generate Story</button>
                 <div id="story-output"></div>
@@ -73,7 +73,7 @@
             const subjectSelect = document.getElementById('subject');
             const customAdj = document.getElementById('customAdjective');
             
-            customAdj.style.display = adjective === 'custom' ? 'block' : 'none';
+            customAdj.classList.toggle('hidden', adjective !== 'custom');
             
             // Update adjective dropdown with custom options
             const adjSelect = document.getElementById('adjective');
@@ -97,12 +97,12 @@
         
         document.getElementById('wordCount').onchange = function() {
             const custom = document.getElementById('customWordCount');
-            custom.style.display = this.value === 'custom' ? 'block' : 'none';
+            custom.classList.toggle('hidden', this.value !== 'custom');
         };
         
         document.getElementById('subject').onchange = function() {
             const custom = document.getElementById('customSubject');
-            custom.style.display = this.value === 'custom' ? 'block' : 'none';
+            custom.classList.toggle('hidden', this.value !== 'custom');
         };
         
         async function generateStory() {
