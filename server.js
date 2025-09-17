@@ -597,6 +597,22 @@ app.get('/login', (req, res) => {
     res.send(html);
 });
 
+// Lightweight endpoint to return current user info (id, username, role, subscription)
+// Uses Authorization header or session/cookie token. Returns 204 if unauthenticated.
+app.get('/auth/whoami', (req, res) => {
+    const token = req.headers.authorization?.split(' ')[1] || req.cookies.token || req.session?.authToken;
+    if (!token) return res.status(204).end();
+    try {
+        const decoded = jwt.verify(token, 'secret');
+        const user = users.find(u => u.id === decoded.id);
+        if (!user) return res.status(204).end();
+        const minimal = { id: user.id, username: user.username, role: user.role, subscription: user.subscription };
+        return res.json(minimal);
+    } catch (err) {
+        return res.status(204).end();
+    }
+});
+
 app.get('/register', (req, res) => {
     res.sendFile(path.join(__dirname, 'register.html'));
 });

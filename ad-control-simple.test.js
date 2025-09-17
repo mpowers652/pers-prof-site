@@ -32,15 +32,11 @@ describe('Ad Control Module Simple Tests', () => {
         expect(window.localStorage.getItem('userType')).toBe('guest');
     });
 
-    test('fetch integration works', () => {
-        global.fetch.mockResolvedValue({
-            json: () => Promise.resolve({ user: { hideAds: true } })
-        });
+    test('fetch integration works with whoami', () => {
+        global.fetch.mockResolvedValue({ json: () => Promise.resolve({ subscription: 'full' }) });
         
-        return global.fetch('/auth/verify').then(response => {
-            return response.json();
-        }).then(data => {
-            expect(data.user.hideAds).toBe(true);
+        return global.fetch('/auth/whoami', { credentials: 'include' }).then(response => response.json()).then(data => {
+            expect(data.subscription).toBe('full');
         });
     });
 
