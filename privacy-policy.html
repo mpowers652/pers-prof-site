@@ -154,6 +154,7 @@
                     `<p style="color: green;">${data.message}</p>` :
                     `<p style="color: red;">${data.message}</p>`;
             } catch (error) {
+                console.error('Error detecting changes:', error);
                 document.getElementById('updateResult').innerHTML = 
                     '<p style="color: red;">Error detecting changes</p>';
             }
