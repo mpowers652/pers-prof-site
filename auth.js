@@ -82,17 +82,38 @@ function getCookieToken() {
 }
 
 // Get token from localStorage, global variable, or cookies
-// Get token from cookie only (do not use localStorage for token storage)
+// Get token from localStorage, global variable, or cookies
 function getToken() {
-    return window.__authToken || getCookieToken();
+    try {
+        if (typeof localStorage !== 'undefined') {
+            const stored = localStorage.getItem('token');
+            if (stored) return stored;
+        }
+    } catch (e) {
+        // ignore access errors
+    }
+    if (typeof window !== 'undefined' && window.__authToken) return window.__authToken;
+    return getCookieToken();
 }
 
 // Clear expired token
 function clearExpiredToken() {
+    try {
+        if (typeof localStorage !== 'undefined') {
+            const stored = localStorage.getItem('token');
+            if (stored && isTokenExpired(stored)) {
+                localStorage.removeItem('token');
+                localStorage.removeItem('userType');
+                return true;
+            }
+        }
+    } catch (e) {
+        // ignore
+    }
+
     const token = getToken();
     if (token && isTokenExpired(token)) {
-        localStorage.removeItem('token');
-        localStorage.removeItem('userType');
+        // clear cookie token
         document.cookie = 'token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;';
         return true;
     }
