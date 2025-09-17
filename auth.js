@@ -41,15 +41,20 @@ function isValidJWT(token) {
 // Refresh token if needed
 async function refreshTokenIfNeeded() {
     const token = getToken();
-    if (!token || isTokenExpired(token)) return false;
-    
+    // If no token is available in JS, still attempt refresh using cookie-based session
+    if (!token && !isTokenExpiringSoon(null)) return false;
+
     if (isTokenExpiringSoon(token)) {
         try {
-            const response = await fetch('/auth/refresh', {
+            const fetchOptions = {
                 method: 'POST',
-                headers: { 'Authorization': `Bearer ${token}` },
-                _isAuthRequest: true
-            });
+                _isAuthRequest: true,
+                credentials: 'include'
+            };
+            if (token) {
+                fetchOptions.headers = { 'Authorization': `Bearer ${token}` };
+            }
+            const response = await fetch('/auth/refresh', fetchOptions);
             
             if (response.ok) {
                 const data = await response.json();
@@ -77,8 +82,9 @@ function getCookieToken() {
 }
 
 // Get token from localStorage, global variable, or cookies
+// Get token from cookie only (do not use localStorage for token storage)
 function getToken() {
-    return localStorage.getItem('token') || window.__authToken || getCookieToken();
+    return window.__authToken || getCookieToken();
 }
 
 // Clear expired token
@@ -120,10 +126,19 @@ function startTokenRefreshTimer() {
 
 // Auth response handler
 function handleAuthResponse(response) {
-    if (response.status === 401) {
+    const status = response && response.status;
+
+    // 401 -> not authenticated -> send to login
+    if (status === 401) {
         clearExpiredToken();
         return { requiresLogin: true, redirectTo: '/login' };
     }
+
+    // 403 -> authenticated but not authorized -> send to subscription page
+    if (status === 403) {
+        return { requiresLogin: true, redirectTo: '/subscription' };
+    }
+
     return { requiresLogin: false };
 }
 
@@ -157,6 +172,7 @@ function setAuthHeaders() {
     const token = getToken();
     const userType = localStorage.getItem('userType');
     
+    // Prefer cookie-based auth; do not add Authorization header from localStorage.
     if (token && !isTokenExpired(token)) {
         return { 'Authorization': `Bearer ${token}` };
     } else if (userType === 'guest') {
@@ -171,7 +187,13 @@ const originalFetch = window.fetch;
 window.fetch = function(url, options = {}) {
     // Skip auth headers for internal auth refresh requests to prevent recursion
     if (!options._isAuthRequest) {
-        options.headers = { ...options.headers, ...setAuthHeaders() };
+        // Add auth headers if a cookie-based token exists (getToken reads cookies)
+        const token = getToken();
+        if (token && !isTokenExpired(token)) {
+            options.headers = { ...options.headers, ...setAuthHeaders() };
+        }
+        // Always include credentials to send httpOnly cookies
+        options.credentials = options.credentials || 'include';
     }
     return originalFetch(url, options).then(response => {
         const authResult = handleAuthResponse(response);

@@ -92,7 +92,9 @@
             const response = await fetch('/auth/login', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ username, password })
+                body: JSON.stringify({ username, password }),
+                // Ensure cookies (httpOnly token) set by server are accepted
+                credentials: 'include'
             });
             
             const data = await response.json();
@@ -103,9 +105,12 @@
                 if (data.token && data.token.split('.').length === 3) {
                     try {
                         JSON.parse(atob(data.token.split('.')[1]));
-                        localStorage.setItem('token', data.token);
-                        console.log('Token stored:', data.token.substring(0, 20) + '...');
-                        console.log('Redirecting to home page...');
+                        // Prefer session-only authentication via httpOnly cookie set by server.
+                        // Do NOT persist token in localStorage or as a readable cookie.
+                        console.log('Login successful; relying on server-set session cookie');
+
+                        // Redirect to home page; server will have set an httpOnly session cookie
+                        // when `credentials: 'include'` was used on the login request.
                         setTimeout(() => {
                             window.location.replace('/');
                         }, 100);

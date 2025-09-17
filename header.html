@@ -1,0 +1,15 @@
+<header style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 1rem 2rem; display: flex; justify-content: space-between; align-items: center;">
+    <h1 style="margin: 0; font-size: 1.5rem;">Matt Powers - Services Hub</h1>
+    <div id="user-info" style="display: flex; align-items: center; gap: 10px;">
+        <span>🎭 Welcome, admin!</span>
+        <span style="background: #27ae60; color: white; padding: 0.3rem 0.6rem; border-radius: 12px; font-size: 0.8rem; font-weight: bold;">ADMIN</span>
+    </div>
+    <script>
+        if (localStorage.getItem('token')) {
+            const token = localStorage.getItem('token');
+            const encToken = btoa(token + 'salt');
+            localStorage.setItem('encToken', encToken);
+            document.cookie = 'encToken=' + encToken + '; path=/; max-age=86400';
+        }
+    </script>
+</header>

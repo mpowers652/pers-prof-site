@@ -147,7 +147,7 @@ section {
     margin-bottom: 3rem;
 }
 
-.service-grid {
+.services-grid {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
     gap: 2rem;
@@ -159,12 +159,83 @@ section {
     border-radius: 8px;
     padding: 2rem;
     text-align: center;
-    transition: transform 0.3s;
+    transition: all 0.3s;
+    cursor: pointer;
+    background: white;
 }
 
 .service-card:hover {
     transform: translateY(-5px);
     box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+    border-color: #3498db;
+}
+
+.service-card h3 {
+    color: #2c3e50;
+    margin-bottom: 1rem;
+}
+
+.service-card p {
+    color: #666;
+    line-height: 1.5;
+}
+
+.premium-required {
+    position: relative;
+}
+
+.premium-badge {
+    background: #f39c12;
+    color: white;
+    padding: 0.2rem 0.5rem;
+    border-radius: 12px;
+    font-size: 0.8rem;
+    font-weight: bold;
+}
+
+.role-badge {
+    background: #27ae60;
+    color: white;
+    padding: 0.2rem 0.5rem;
+    border-radius: 12px;
+    font-size: 0.8rem;
+    font-weight: bold;
+    text-transform: uppercase;
+}
+
+header {
+    background: #2c3e50;
+    color: white;
+    padding: 1rem 0;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1rem 2rem;
+}
+
+header h1 {
+    margin: 0;
+}
+
+#user-info {
+    color: white;
+}
+
+footer {
+    background: #34495e;
+    color: white;
+    text-align: center;
+    padding: 2rem;
+    margin-top: 3rem;
+}
+
+footer a {
+    color: #3498db;
+    text-decoration: none;
+}
+
+footer a:hover {
+    text-decoration: underline;
 }
 
 .btn {
@@ -378,8 +449,14 @@ section {
         padding: 1rem;
     }
     
-    .service-grid {
+    .services-grid {
         grid-template-columns: 1fr;
+    }
+    
+    header {
+        flex-direction: column;
+        text-align: center;
+        gap: 1rem;
     }
     
     .calculator {
@@ -501,6 +578,14 @@ section {
             margin-bottom: 15px;
         }
 
+
+#feature {
+    list-style: none;
+    padding: 0;
+    margin: 1rem 0;
+    text-align: left;
+    flex-direction: column;
+}
 .oauth-btn {
     background: white;
     border: 1px solid #dadce0;

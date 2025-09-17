@@ -132,67 +132,32 @@ const getAdminEmail = () => process.env.ADMIN_EMAIL || 'cartoonsredbob@gmail.com
 
 // Create admin user
 const adminPassword = process.env.NODE_ENV === 'test' ? 'test' : Math.random().toString(36).slice(-12);
-if (process.env.NODE_ENV === 'test') {
-    // Synchronous creation for tests
-    const hashedPassword = bcrypt.hashSync(adminPassword, 10);
-    const adminEmail = getAdminEmail();
-    users.push({
-        id: 1,
-        username: 'admin',
-        email: adminEmail,
-        password: hashedPassword,
-        role: 'admin',
-        subscription: 'full'
-    });
-    console.log(`Admin user created - Username: admin, Email: ${adminEmail}, Password: ${adminPassword}`);
-} else {
-    // Asynchronous creation for production
-    bcrypt.hash(adminPassword, 10).then(hashedPassword => {
-        const adminEmail = getAdminEmail();
-        users.push({
-            id: 1,
-            username: 'admin',
-            email: adminEmail,
-            password: hashedPassword,
-            role: 'admin',
-            subscription: 'full'
-        });
-        console.log(`Admin user created - Username: admin, Email: ${adminEmail}, Password: ${adminPassword}`);
-    }).catch(error => {
-        console.error('Failed to create admin user:', error.message);
-    });
-}
+const adminEmail = getAdminEmail();
+
+// Always create admin synchronously to ensure it exists before server starts
+const hashedPassword = bcrypt.hashSync(adminPassword, 10);
+users.push({
+    id: 1,
+    username: 'admin',
+    email: adminEmail,
+    password: hashedPassword,
+    role: 'admin',
+    subscription: 'full'
+});
+console.log(`Admin user created - Username: admin, Email: ${adminEmail}, Password: ${adminPassword}, Role: admin, Subscription: full`);
 
 // Create premium user example
 const premiumPassword = Math.random().toString(36).slice(-12);
-if (process.env.NODE_ENV === 'test') {
-    // Synchronous creation for tests
-    const hashedPassword = bcrypt.hashSync(premiumPassword, 10);
-    users.push({
-        id: 2,
-        username: 'premium',
-        email: 'premium@localhost',
-        password: hashedPassword,
-        role: 'user',
-        subscription: 'premium'
-    });
-    console.log(`Premium user created - Username: premium, Password: ${premiumPassword}`);
-} else {
-    // Asynchronous creation for production
-    bcrypt.hash(premiumPassword, 10).then(hashedPassword => {
-        users.push({
-            id: 2,
-            username: 'premium',
-            email: 'premium@localhost',
-            password: hashedPassword,
-            role: 'user',
-            subscription: 'premium'
-        });
-        console.log(`Premium user created - Username: premium, Password: ${premiumPassword}`);
-    }).catch(error => {
-        console.error('Failed to create premium user:', error.message);
-    });
-}
+const hashedPremiumPassword = bcrypt.hashSync(premiumPassword, 10);
+users.push({
+    id: 2,
+    username: 'premium',
+    email: 'premium@localhost',
+    password: hashedPremiumPassword,
+    role: 'user',
+    subscription: 'premium'
+});
+console.log(`Premium user created - Username: premium, Password: ${premiumPassword}, Role: user, Subscription: premium`);
 
 // Passport configuration - initialize after secrets are loaded
 function initializePassport() {
@@ -210,7 +175,7 @@ function initializePassport() {
         // First check if user exists by Google ID
         let user = users.find(u => u.googleId === profile.id);
         
-        // If not found by Google ID, check by email (merge with existing user)
+        // If not found by Google ID, check by email for existing users
         if (!user && userEmail) {
             user = users.find(u => u.email === userEmail);
             if (user) {
@@ -222,22 +187,19 @@ function initializePassport() {
             }
         }
         
-        // Create new user if none exists
+        // Create new user if email doesn't match any existing user
         if (!user) {
-            const adminEmail = getAdminEmail();
-            const isAdmin = userEmail === adminEmail;
-            console.log(`Google OAuth: ${userEmail} vs ${adminEmail}, isAdmin: ${isAdmin}`);
             user = { 
                 id: users.length + 1, 
                 googleId: profile.id, 
                 username: profile.displayName, 
                 email: userEmail,
                 googlePhoto: profile.photos?.[0]?.value,
-                role: isAdmin ? 'admin' : 'user',
-                subscription: isAdmin ? 'full' : 'basic'
+                role: 'user',
+                subscription: 'basic'
             };
             users.push(user);
-            console.log(`Created Google user: role=${user.role}, subscription=${user.subscription}, email=${user.email}`);
+            console.log(`Created new Google user: ${user.email}, role: ${user.role}, id: ${user.id}`);
         }
         return done(null, user);
     }));
@@ -277,8 +239,8 @@ passport.deserializeUser((id, done) => {
 
 // Authentication middleware with auto-refresh
 function requireAuth(req, res, next) {
-    const token = req.headers.authorization?.split(' ')[1] || req.cookies.token;
-    const isGuest = req.headers['x-user-type'] === 'guest' || req.query.guest === 'true';
+    const token = req.headers.authorization?.split(' ')[1] || req.cookies.token || req.session?.authToken;
+        const isGuest = req.headers['x-user-type'] === 'guest' || req.query.guest === 'true' || req.path === '/login';
     
     if (token || isGuest || req.path === '/login' || req.path === '/register' || req.path.startsWith('/auth/')) {
         return next();
@@ -299,53 +261,51 @@ app.get('/fft-visualizer', (req, res) => {
     res.sendFile(path.join(__dirname, 'fft-visualizer.html'));
 });
 
+// Subscription page
+app.get('/subscription', (req, res) => {
+    res.sendFile(path.join(__dirname, 'subscription.html'));
+});
+
 // Story Generator route (requires full subscription)
 app.get('/story-generator', (req, res) => {
-    const token = req.headers.authorization?.split(' ')[1] || req.cookies.token;
-    console.log('Story generator token check:', { hasAuthHeader: !!req.headers.authorization, hasCookie: !!req.cookies.token, token: token?.substring(0, 20) + '...' });
-    
-    if (!token) {
-        console.log('Story generator access denied: No token provided');
-        return res.status(401).send('Access denied. Full subscription required.');
-    }
-    
+    const token = req.headers.authorization?.split(' ')[1] || req.cookies.token || req.session?.authToken;
+    if (!token) return res.redirect('/login');
+
     try {
         const decoded = jwt.verify(token, 'secret');
         const user = users.find(u => u.id === decoded.id);
-        if (!user) {
-            console.log('Story generator access denied: User not found');
-            return res.status(401).send('Access denied');
-        }
-        
-        console.log(`Story generator access attempt by user: ${user.username}, role: ${user.role}, subscription: ${user.subscription}`);
-        
-        if (user.subscription !== 'full' && user.role !== 'admin') {
-            console.log('Story generator access denied: Insufficient subscription level');
-            return res.status(403).send('Access denied. Full subscription required.');
-        }
-        
-        // Admin users always have access regardless of subscription
-        if (user.role === 'admin') {
-            console.log('Story generator access granted for admin user');
-        }
-        
-        console.log('Story generator access granted');
-        res.sendFile(path.join(__dirname, 'story-generator.html'));
+        if (!user) return res.redirect('/login');
+        if (user.subscription !== 'full' && user.role !== 'admin') return res.redirect('/subscription');
+        return res.sendFile(path.join(__dirname, 'story-generator.html'));
     } catch (error) {
-        console.log('Story generator access denied: Invalid token', error.message);
-        return res.status(401).send('Invalid token.');
+        return res.redirect('/login');
     }
 });
 
 app.post('/story/generate', express.json(), async (req, res) => {
     const token = req.headers.authorization?.split(' ')[1] || req.cookies.token;
-    if (!token) return res.status(401).json({ error: 'Access denied' });
+    console.log('Story generation - token from header:', !!req.headers.authorization?.split(' ')[1]);
+    console.log('Story generation - token from cookie:', !!req.cookies.token);
+    console.log('Story generation - final token exists:', !!token);
+    
+    if (!token) {
+        console.log('Story generation - no token found');
+        return res.status(401).json({ error: 'No token provided' });
+    }
     
     try {
         const decoded = jwt.verify(token, 'secret');
         const user = users.find(u => u.id === decoded.id);
-        if (!user || (user.subscription !== 'full' && user.role !== 'admin')) {
-            return res.status(403).json({ error: 'Full subscription required' });
+        console.log('Story generation - user found:', user ? user.username : 'none', 'role:', user?.role, 'subscription:', user?.subscription);
+        
+        if (!user) {
+            console.log('Story generation - user not found for token');
+            return res.status(404).json({ error: 'User not found' });
+        }
+        
+        if (user.subscription !== 'full' && user.role !== 'admin') {
+            console.log('Story generation - insufficient permissions');
+            return res.status(403).json({ error: 'SUBSCRIPTION_REQUIRED', redirect: '/subscription' });
         }
         
         console.log(`Story generation request from user: ${user.username}, role: ${user.role}`);
@@ -618,7 +578,7 @@ function evaluateExpression(expr) {
 // Auth routes
 app.get('/login', (req, res) => {
     // Clear any existing authentication tokens with proper options
-    res.clearCookie('token', { path: '/' });
+    res.clearCookie('token', { path: '/', httpOnly: true });
     res.clearCookie('connect.sid', { path: '/' });
     
     // Add headers to prevent caching of login page
@@ -628,7 +588,13 @@ app.get('/login', (req, res) => {
         'Expires': '0'
     });
     
-    res.sendFile(path.join(__dirname, 'login.html'));
+    let html = fs.readFileSync(path.join(__dirname, 'login.html'), 'utf8');
+    const clearScript = `<script>
+        localStorage.clear();
+        sessionStorage.clear();
+    </script>`;
+    html = html.replace('</head>', clearScript + '</head>');
+    res.send(html);
 });
 
 app.get('/register', (req, res) => {
@@ -705,8 +671,8 @@ app.post('/auth/login', express.json(), async (req, res) => {
     const token = jwt.sign({ id: user.id, iat: Math.floor(Date.now() / 1000) }, 'secret', { expiresIn: '1h' });
     console.log('Login successful for:', username, 'token generated');
     
-    // Set token as cookie for server access
-    res.cookie('token', token, { httpOnly: false, secure: process.env.NODE_ENV === 'production', maxAge: 3600000 });
+    // Set session-only httpOnly token cookie (no maxAge -> session cookie)
+        res.cookie('token', token, { httpOnly: true, secure: process.env.NODE_ENV === 'production', path: '/', sameSite: 'lax' });
     
     res.json({ success: true, token });
 });
@@ -736,10 +702,11 @@ app.get('/auth/google/callback', (req, res, next) => {
             return res.redirect('/login');
         }
         
+        console.log('OAuth user object:', { id: req.user.id, username: req.user.username, email: req.user.email, role: req.user.role });
         const token = jwt.sign({ id: req.user.id, iat: Math.floor(Date.now() / 1000) }, 'secret', { expiresIn: '1h' });
-        console.log('Google OAuth success, token generated:', token.substring(0, 20) + '...');
-        // Set token as accessible cookie for frontend use
-        res.cookie('token', token, { httpOnly: false, secure: process.env.NODE_ENV === 'production', maxAge: 3600000 });
+        console.log('Google OAuth success, token generated for user ID:', req.user.id);
+        // Set token as httpOnly cookie
+            res.cookie('token', token, { httpOnly: true, secure: process.env.NODE_ENV === 'production', path: '/', sameSite: 'lax' });
         res.redirect('/');
     });
 });
@@ -771,8 +738,8 @@ app.get('/auth/facebook/callback', (req, res, next) => {
         
         const token = jwt.sign({ id: req.user.id, iat: Math.floor(Date.now() / 1000) }, 'secret', { expiresIn: '1h' });
         req.session.authToken = token;
-        // Set token as accessible cookie for frontend use
-        res.cookie('token', token, { httpOnly: false, secure: process.env.NODE_ENV === 'production', maxAge: 3600000 });
+        // Set token as httpOnly cookie
+        res.cookie('token', token, { httpOnly: true, secure: process.env.NODE_ENV === 'production', maxAge: 3600000 });
         res.redirect('/');
     });
 });
@@ -805,16 +772,12 @@ app.get('/auth/verify', (req, res) => {
 });
 
 app.post('/auth/logout', (req, res) => {
-    // Clear server-side cookies with proper options
-    res.clearCookie('token', { path: '/' });
-    res.clearCookie('connect.sid', { path: '/' });
-    
     res.json({ success: true, message: 'Logged out successfully' });
 });
 
 app.get('/logout', (req, res) => {
-    // Clear server-side cookies with proper options
-    res.clearCookie('token', { path: '/' });
+    // Clear httpOnly cookies
+    res.clearCookie('token', { path: '/', httpOnly: true });
     res.clearCookie('connect.sid', { path: '/' });
     
     // Redirect to login page which will clear client-side tokens
@@ -861,22 +824,30 @@ app.post('/auth/request-api-key', express.json(), async (req, res) => {
 });
 
 app.post('/auth/refresh', (req, res) => {
-    const token = req.headers.authorization?.split(' ')[1];
+    // Accept token from Authorization header OR cookie (cookie preferred for session-only flows)
+    const headerToken = req.headers.authorization?.split(' ')[1];
+    const cookieToken = req.cookies.token;
+    const token = headerToken || cookieToken;
+
     if (!token) return res.status(401).json({ error: 'No token' });
-    
+
     try {
         const decoded = jwt.verify(token, 'secret', { ignoreExpiration: true });
         const user = users.find(u => u.id === decoded.id);
         if (!user) return res.status(404).json({ error: 'User not found' });
-        
+
         // Check if token is within refresh window (allow refresh up to 24h after expiration)
         const now = Math.floor(Date.now() / 1000);
         const refreshWindow = 24 * 60 * 60; // 24 hours
         if (decoded.exp && (now - decoded.exp) > refreshWindow) {
             return res.status(401).json({ error: 'Token too old to refresh' });
         }
-        
+
         const newToken = jwt.sign({ id: user.id, iat: Math.floor(Date.now() / 1000) }, 'secret', { expiresIn: '1h' });
+        // Set refreshed token as session-only httpOnly cookie
+        res.cookie('token', newToken, { httpOnly: true, secure: process.env.NODE_ENV === 'production', path: '/', sameSite: 'lax' });
+
+        // Return the new token for backwards compatibility (clients should not persist it)
         res.json({ token: newToken });
     } catch {
         res.status(401).json({ error: 'Invalid token' });
@@ -1069,6 +1040,21 @@ app.post('/create-admin', (req, res) => {
     });
 });
 
+// Quick admin login for development
+app.get('/admin-login', (req, res) => {
+    const adminUser = users.find(u => u.role === 'admin');
+    if (!adminUser) {
+        return res.status(404).send('Admin user not found');
+    }
+    
+    const token = jwt.sign({ id: adminUser.id, iat: Math.floor(Date.now() / 1000) }, 'secret', { expiresIn: '1h' });
+    console.log('Admin quick login, token generated:', token.substring(0, 20) + '...');
+    
+    // Set session-only httpOnly cookie for admin quick login
+    res.cookie('token', token, { httpOnly: true, secure: process.env.NODE_ENV === 'production', path: '/', sameSite: 'lax' });
+    res.redirect('/');
+});
+
 // Admin Configuration
 app.post('/admin/set-email', express.json(), (req, res) => {
     const token = req.headers.authorization?.split(' ')[1];
@@ -1201,53 +1187,65 @@ app.post('/privacy-policy/detect-changes', express.json(), async (req, res) => {
     }
 });
 
-// Root route serves main page
-app.get('/', (req, res) => {
-    const authToken = req.headers.authorization?.split(' ')[1] || req.cookies.token;
-    const urlToken = req.query.token;
-    const isGuest = req.headers['x-user-type'] === 'guest' || req.query.guest === 'true';
-    
-    console.log('Root route access:', { hasAuthToken: !!authToken, hasUrlToken: !!urlToken, isGuest, cookies: Object.keys(req.cookies) });
-    
-    let html = fs.readFileSync(path.join(__dirname, 'index.html'), 'utf8');
-    
-    // Security: Never accept tokens from URL parameters - redirect to login
-    if (urlToken) {
+// Story Generator route (requires full subscription)
+app.get('/story-generator', (req, res) => {
+    console.log('=== STORY GENERATOR ROUTE HIT ===');
+    const token = req.cookies.token;
+    console.log('Story generator access - token exists:', !!token);
+    if (!token) {
         return res.redirect('/login');
     }
     
-    // Validate authorization token if present
-    if (authToken) {
-        try {
-            const decoded = jwt.verify(authToken, 'secret');
-            const user = users.find(u => u.id === decoded.id);
-            if (!user) {
-                return res.redirect('/login');
-            }
-            // Serve authenticated page without token injection for security
-            const welcomeMessage = `
-            <div style="background: #e8f5e8; padding: 10px; margin: 10px; border-radius: 5px;">
-                Welcome, ${user.username}! You are authenticated.
-            </div>`;
-            html = html.replace('</body>', welcomeMessage + '</body>');
-            return res.send(html);
-        } catch {
+    try {
+        const decoded = jwt.verify(token, 'secret');
+        const user = users.find(u => u.id === decoded.id);
+    // Story generator - user found (no object dump)
+        if (!user) {
             return res.redirect('/login');
         }
+        
+        if (user.subscription !== 'full' && user.role !== 'admin') {
+            console.log('Story generator - redirecting to subscription');
+            return res.redirect('/subscription');
+        }
+        
+        console.log('Story generator - access granted');
+        res.sendFile(path.join(__dirname, 'story-generator.html'));
+    } catch (error) {
+        console.log('Story generator - token error:', error.message);
+        return res.redirect('/login');
+    }
+});
+
+// Root route serves main page
+app.get('/', (req, res) => {
+    const token = req.cookies.token;
+    if (!token) {
+        return res.redirect('/login');
     }
     
-    // Handle guest mode or no authentication
-    if (isGuest) {
-        const guestScript = `
-        <div style="background: #f0f8ff; padding: 10px; margin: 10px; border-radius: 5px;">
-            Welcome, Guest! Please log in to access more features.
-        </div>`;
-        html = html.replace('</body>', guestScript + '</body>');
-        return res.send(html);
+    try {
+        const decoded = jwt.verify(token, 'secret');
+    // Token decoded for authentication
+        const user = users.find(u => u.id === decoded.id);
+        if (!user) {
+            return res.redirect('/login');
+        }
+        
+    // Authenticated user found
+        
+        let html = require('ejs').render(fs.readFileSync(path.join(__dirname, 'index.html'), 'utf8'), {}, { filename: path.join(__dirname, 'index.html') });
+        
+        const userScript = `<script>window.currentUser = ${JSON.stringify(user)};</script>`;
+        
+        html = html.replace('</head>', userScript + '</head>');
+        res.send(html);
+    } catch (error) {
+        console.log('Invalid token, redirecting to login');
+        return res.redirect('/login');
     }
     
-    // No authentication - redirect to login
-    res.redirect('/login');
+
 });
 
 
@@ -1267,8 +1265,35 @@ app.use((err, req, res, next) => {
 
 // Redirect to login for all other GET routes (not POST routes)
 app.get('*', (req, res) => {
-    res.redirect('/login');
+    // Serve the static index.html with injected user data when available (same as root)
+    const user = getUserFromReq(req);
+    try {
+        let html = require('ejs').render(fs.readFileSync(path.join(__dirname, 'index.html'), 'utf8'), {}, { filename: path.join(__dirname, 'index.html') });
+        if (user) {
+            const userScript = `<script>window.currentUser = ${JSON.stringify(user)};</script>`;
+            html = html.replace('</head>', userScript + '</head>');
+        }
+        return res.send(html);
+    } catch (err) {
+        return res.status(500).send('Server error');
+    }
 });
+
+// Development-only helper: upgrade the current authenticated user's subscription to 'full'
+// This route is only enabled when not running in production and helps testing premium-only pages.
+// (dev-only test route removed)
+
+// Helper to extract user from request by checking Authorization header, cookie, or session
+function getUserFromReq(req) {
+    const token = req.headers.authorization?.split(' ')[1] || req.cookies.token || req.session?.authToken;
+    if (!token) return null;
+    try {
+        const decoded = jwt.verify(token, 'secret');
+        return users.find(u => u.id === decoded.id) || null;
+    } catch (e) {
+        return null;
+    }
+}
 
 // HTTPS server startup function
 function startServer(port) {

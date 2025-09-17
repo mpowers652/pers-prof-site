@@ -8,11 +8,7 @@
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
-    <header>
-        <nav>
-            <h1><a href="/" class="nav-title">Matt Powers</a></h1>
-        </nav>
-    </header>
+    <div id="header-root"></div>
 
     <main>
         <section>
@@ -61,11 +57,8 @@
 
     <script src="auth.js"></script>
     <script>
-        // Check if user has token, if not redirect to login
-        const token = localStorage.getItem('token');
-        if (!token) {
-            window.location.href = '/login?redirect=/story-generator';
-        }
+        // The server already validated access when serving this page
+        // No need to check localStorage token since we use httpOnly cookies
     </script>
     <script>
         let customAdjectives = JSON.parse(localStorage.getItem('customAdjectives') || '[]');
@@ -132,21 +125,20 @@
             
             document.getElementById('story-output').innerHTML = '<div class="loading">Generating story...</div>';
             
-            const token = localStorage.getItem('token');
-            const headers = { 'Content-Type': 'application/json' };
-            if (token) {
-                headers['Authorization'] = `Bearer ${token}`;
-            }
-            
+            // Don't try to set Authorization header - let the server use the httpOnly cookie
             const response = await fetch('/story/generate', {
                 method: 'POST',
-                headers: headers,
+                headers: { 'Content-Type': 'application/json' },
+                credentials: 'include', // Include cookies in the request
                 body: JSON.stringify({ adjective, wordCount, subject })
             });
             
             const data = await response.json();
             if (data.error) {
-                if (data.error === 'AI_KEY_MISSING') {
+                if (data.error === 'SUBSCRIPTION_REQUIRED') {
+                    window.location.href = data.redirect || '/subscription';
+                    return;
+                } else if (data.error === 'AI_KEY_MISSING') {
                     document.getElementById('story-output').innerHTML = `<div class="error">${data.message} <a href="/request-api-key">Request AI Access</a></div>`;
                 } else {
                     document.getElementById('story-output').innerHTML = `<div class="error">${data.error}</div>`;
@@ -175,5 +167,6 @@
             }
         }
     </script>
+    <script src="dist/header.js"></script>
 </body>
 </html>
