@@ -1255,6 +1255,8 @@ app.get('*', (req, res, next) => {
 
 // Error handling middleware for OAuth strategy errors
 app.use((err, req, res, next) => {
+    console.error('Application error:', err);
+    
     if (err.message && err.message.includes('Unknown authentication strategy')) {
         if (req.path === '/auth/google') {
             return res.status(500).send('Google OAuth not configured');
@@ -1263,7 +1265,14 @@ app.use((err, req, res, next) => {
             return res.status(500).send('Facebook OAuth not configured');
         }
     }
-    next(err);
+    
+    // For API requests, send JSON error
+    if (req.path.startsWith('/api') || req.path.startsWith('/auth')) {
+        return res.status(500).json({ error: 'Internal server error' });
+    }
+    
+    // For other requests, show error page
+    res.status(500).sendFile(path.join(__dirname, 'error.html'));
 });
 
 
@@ -1317,10 +1326,25 @@ function startServer(port) {
 
 if (process.env.NODE_ENV !== 'test') {
     loadPermanentSecrets().then(() => {
-        initializePassport();
-        initializePolicyMonitoring();
-        startServer(PORT);
-    }).catch(console.error);
+        try {
+            initializePassport();
+            initializePolicyMonitoring();
+            const server = startServer(PORT);
+            
+            server.on('error', (error) => {
+                console.error('Server error:', error);
+                if (error.code === 'EADDRINUSE') {
+                    console.error(`Port ${PORT} is in use. Trying next port...`);
+                }
+            });
+        } catch (error) {
+            console.error('Failed to initialize server:', error);
+            process.exit(1);
+        }
+    }).catch(error => {
+        console.error('Failed to load secrets:', error);
+        process.exit(1);
+    });
 } else {
     // Initialize passport and policy monitoring for test mode
     initializePassport();
