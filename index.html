@@ -8,6 +8,19 @@
 </head>
 <body>
     <div id="root"></div>
+    <script>
+        // Fetch the current user data before loading the React app
+        fetch('/auth/whoami', {
+            credentials: 'include'
+        })
+        .then(response => response.status === 200 ? response.json() : { username: 'Guest', role: 'user' })
+        .then(user => {
+            window.currentUser = user;
+        })
+        .catch(() => {
+            window.currentUser = { username: 'Guest', role: 'user' };
+        });
+    </script>
     <script src="dist/main.js"></script>
 </body>
 </html>
