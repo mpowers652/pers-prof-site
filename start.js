@@ -59,24 +59,35 @@ function getServerProcess() {
 }
 
 // Handle graceful shutdown
-function handleSIGINT() {
-    console.log('Shutting down...');
+let isShuttingDown = false;
+
+function handleShutdown(signal) {
+    if (isShuttingDown) return;
+    isShuttingDown = true;
+    
+    console.log(`Received ${signal}, gracefully shutting down...`);
+    
+    // Give the server 5 seconds to close gracefully
+    const forceExit = setTimeout(() => {
+        console.log('Could not close connections in time, forcefully shutting down');
+        process.exit(1);
+    }, 5000);
+    
     if (serverProcess) {
-        serverProcess.kill('SIGINT');
+        serverProcess.kill(signal);
+        serverProcess.once('exit', (code) => {
+            console.log(`Server exited with code ${code}`);
+            clearTimeout(forceExit);
+            process.exit(0);
+        });
+    } else {
+        clearTimeout(forceExit);
+        process.exit(0);
     }
-    process.exit(0);
 }
 
-function handleSIGTERM() {
-    console.log('Shutting down...');
-    if (serverProcess) {
-        serverProcess.kill('SIGTERM');
-    }
-    process.exit(0);
-}
-
-process.on('SIGINT', handleSIGINT);
-process.on('SIGTERM', handleSIGTERM);
+process.on('SIGINT', () => handleShutdown('SIGINT'));
+process.on('SIGTERM', () => handleShutdown('SIGTERM'));
 
 // Only start server if not in test environment
 if (process.env.NODE_ENV !== 'test') {

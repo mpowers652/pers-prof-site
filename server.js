@@ -112,11 +112,22 @@ app.use((req, res, next) => {
 app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
 app.use(cookieParser());
-app.use(require('express-session')({ 
+// Use FileStore in production, MemoryStore in development
+const session = require('express-session');
+const FileStore = require('session-file-store')(session);
+
+app.use(session({ 
+    store: process.env.NODE_ENV === 'production' ? new FileStore({
+        path: './sessions',
+        ttl: 86400
+    }) : undefined,
     secret: 'secret', 
     resave: false, 
     saveUninitialized: true,
-    cookie: { secure: false, maxAge: 600000 }
+    cookie: { 
+        secure: process.env.NODE_ENV === 'production',
+        maxAge: 600000 
+    }
 }));
 app.use(passport.initialize());
 app.use(passport.session());
