@@ -126,6 +126,5 @@ module.exports = {
     startServer, 
     resetRestartCount, 
     getServerProcess,
-    handleSIGINT,
-    handleSIGTERM
+    handleShutdown
 };

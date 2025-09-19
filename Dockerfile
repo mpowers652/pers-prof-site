@@ -13,19 +13,24 @@ COPY . .
 RUN rm -f .env
 ENV NODE_ENV=production
 
+# Build the frontend assets with webpack
+RUN npx webpack --mode=production
+
 # Remove AdSense configuration to prevent 400 errors
 RUN sed -i '/adsbygoogle/d' index.html || true
 
-# Create archives directory for privacy policy versions
-RUN mkdir -p archives
+# Create required directories
+RUN mkdir -p archives sessions
 
-# Create non-root user
+# Create non-root user and set permissions
 RUN addgroup -g 1001 -S nodejs && \
-    adduser -S nodeuser -u 1001
+    adduser -S nodeuser -u 1001 && \
+    chown -R nodeuser:nodejs /usr/src/app/sessions /usr/src/app/archives
+
 USER nodeuser
 
 # Expose port
 EXPOSE 3000
 
 # Start application with auto-restart capability
-CMD ["node", "server.js"]
+CMD ["npm", "start"]
