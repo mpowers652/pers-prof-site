@@ -1222,7 +1222,11 @@ app.post('/privacy-policy/detect-changes', express.json(), async (req, res) => {
 
 // Root route serves main page
 app.get('/', (req, res) => {
-    res.sendFile(path.join(__dirname, 'index.html'));
+    const user = getUserFromReq(req) || { username: 'Guest', role: 'user' };
+    let html = fs.readFileSync(path.join(__dirname, 'index.html'), 'utf8');
+    const userScript = `<script>window.currentUser = ${JSON.stringify(user)};</script>`;
+    html = html.replace('</head>', `${userScript}</head>`);
+    res.send(html);
 });
 
 // SPA fallback: serve index.html for all non-API, non-static GET routes
@@ -1231,7 +1235,11 @@ SPA_ROUTES.forEach(route => {
     app.get(route, (req, res, next) => {
         // Only handle if not an API or static file
         if (req.path.startsWith('/api') || req.path.startsWith('/auth') || req.path.startsWith('/admin')) return next();
-        res.sendFile(path.join(__dirname, 'index.html'));
+        const user = getUserFromReq(req) || { username: 'Guest', role: 'user' };
+        let html = fs.readFileSync(path.join(__dirname, 'index.html'), 'utf8');
+        const userScript = `<script>window.currentUser = ${JSON.stringify(user)};</script>`;
+        html = html.replace('</head>', `${userScript}</head>`);
+        res.send(html);
     });
 });
 
