@@ -1235,8 +1235,10 @@ app.post('/privacy-policy/detect-changes', express.json(), async (req, res) => {
 app.get('/', (req, res) => {
     const user = getUserFromReq(req) || { username: 'Guest', role: 'user' };
     let html = fs.readFileSync(path.join(__dirname, 'index.html'), 'utf8');
+    const header = fs.readFileSync(path.join(__dirname, 'header.html'), 'utf8');
     const userScript = `<script>window.currentUser = ${JSON.stringify(user)};</script>`;
     html = html.replace('</head>', `${userScript}</head>`);
+    html = html.replace('<div id="root">', `${header}<div id="root">`);
     res.send(html);
 });
 
@@ -1248,8 +1250,10 @@ SPA_ROUTES.forEach(route => {
         if (req.path.startsWith('/api') || req.path.startsWith('/auth') || req.path.startsWith('/admin')) return next();
         const user = getUserFromReq(req) || { username: 'Guest', role: 'user' };
         let html = fs.readFileSync(path.join(__dirname, 'index.html'), 'utf8');
+        const header = fs.readFileSync(path.join(__dirname, 'header.html'), 'utf8');
         const userScript = `<script>window.currentUser = ${JSON.stringify(user)};</script>`;
         html = html.replace('</head>', `${userScript}</head>`);
+        html = html.replace('<div id="root">', `${header}<div id="root">`);
         res.send(html);
     });
 });
@@ -1259,7 +1263,13 @@ app.get('*', (req, res, next) => {
     if (req.method !== 'GET') return next();
     if (req.path.startsWith('/api') || req.path.startsWith('/auth') || req.path.startsWith('/admin')) return next();
     // If the requested path matches an existing static file, let express.static handle it earlier.
-    res.sendFile(path.join(__dirname, 'index.html'));
+    const user = getUserFromReq(req) || { username: 'Guest', role: 'user' };
+    let html = fs.readFileSync(path.join(__dirname, 'index.html'), 'utf8');
+    const header = fs.readFileSync(path.join(__dirname, 'header.html'), 'utf8');
+    const userScript = `<script>window.currentUser = ${JSON.stringify(user)};</script>`;
+    html = html.replace('</head>', `${userScript}</head>`);
+    html = html.replace('<div id="root">', `${header}<div id="root">`);
+    res.send(html);
 });
 
 
