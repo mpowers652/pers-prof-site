@@ -19,7 +19,13 @@ function LoginPage() {
       });
       const data = await response.json();
       if (data.success) {
-        window.location.replace('/');
+        // Check if user is a standard user (not premium/full/admin)
+        const user = data.user || {};
+        if (user.subscription === 'basic' && user.role !== 'admin') {
+          window.location.replace('/subscription');
+        } else {
+          window.location.replace('/');
+        }
       } else {
         setError(data.message || 'Login failed');
       }
