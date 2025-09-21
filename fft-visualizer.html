@@ -7,24 +7,151 @@
     <title>FFT Audio Visualizer - Matt Powers</title>
     <link rel="stylesheet" href="style.css">
     <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-7284206181717863" crossorigin="anonymous"></script>
-    
+    <style>
+        .page-container {
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh;
+            padding: 20px;
+            box-sizing: border-box;
+        }
+
+        .page-header {
+            text-align: center;
+            margin-bottom: 2rem;
+        }
+
+        .controls-container {
+            margin-bottom: 2rem;
+        }
+
+        .controls {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 1rem;
+            justify-content: center;
+            align-items: start;
+            padding: 1rem;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 8px;
+        }
+
+        .aspect-ratio-group, .download-group {
+            background: rgba(0, 0, 0, 0.2);
+            padding: 1rem;
+            border-radius: 4px;
+        }
+
+        .visualizer-container {
+            position: relative;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            flex-grow: 1;
+        }
+
+        #masterWindow {
+            /* Keep the master window in the normal flow so it doesn't overlay controls */
+            position: relative;
+            margin: 0 auto 2rem auto;
+            border: 2px solid #333;
+            background-color: rgba(0, 0, 0, 0.9);
+            box-shadow: 0 0 20px rgba(0,0,0,0.5);
+            overflow: hidden;
+            width: 80vw;
+            max-width: 1200px;
+            height: 60vh;
+            max-height: 800px;
+            border-radius: 8px;
+        }
+
+        .window-content {
+            width: 100%;
+            height: 100%;
+            display: flex;
+        }
+
+        #vizSection {
+            position: relative;
+            overflow: hidden;
+            flex: 1;
+            background: rgba(0, 0, 0, 0.5);
+        }
+
+        #vizSection canvas {
+            position: relative;
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            display: block;
+        }
+
+        .profile-section {
+            flex: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: linear-gradient(135deg, rgba(26, 26, 26, 0.9) 0%, rgba(42, 42, 42, 0.9) 100%);
+            padding: 2rem;
+        }
+
+        .profile-pic {
+            width: 180px;
+            height: 180px;
+            border-radius: 50%;
+            background: rgba(102, 102, 102, 0.5);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            border: 3px solid rgba(68, 68, 68, 0.8);
+            box-shadow: 0 0 20px rgba(0,0,0,0.3);
+            overflow: hidden;
+        }
+
+        .profile-pic img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        /* Responsive adjustments */
+        @media (max-width: 768px) {
+            .controls {
+                flex-direction: column;
+                align-items: stretch;
+            }
+
+            #masterWindow {
+                width: 95vw;
+                height: 95vh;
+            }
+
+            .profile-pic {
+                width: 120px;
+                height: 120px;
+            }
+        }
+    </style>
 </head>
 <body>
     <div id="header-root"></div>
-
-    <main>
-        <section>
+    <div class="page-container">
+        <header class="page-header">
             <h2>FFT Audio Visualizer</h2>
-            <div class="visualizer-container">
+        </header>
+        
+        <main>
+            <div class="controls-container">
                 <div class="controls">
                     <button id="startBtn" class="btn">Start Microphone</button>
                     <div class="aspect-ratio-group">
-                        <p>Aspect ratio if video:</p>
-                        <label><input type="radio" name="aspectRatio" value="16:9" checked> 16:9</label>
-                        <label><input type="radio" name="aspectRatio" value="9:16"> 9:16</label>
+                        <p>Window Layout:</p>
+                        <label><input type="radio" name="aspectRatio" value="16:9" checked> Side by Side</label>
+                        <label><input type="radio" name="aspectRatio" value="9:16"> Stacked</label>
                     </div>
                     <div class="download-group">
-                        <p>Select your download option:</p>
+                        <p>Download Options:</p>
                         <label><input type="radio" name="downloadType" value="audio" disabled> Audio Only</label>
                         <label><input type="radio" name="downloadType" value="video" disabled> FFT Video Only</label>
                         <label><input type="radio" name="downloadType" value="both" disabled> Both Audio and Video</label>
@@ -32,6 +159,9 @@
                     <button id="downloadBtn" class="btn" disabled>Download</button>
                     <button id="downloadViz" class="btn">Download Visualization</button>
                 </div>
+            </div>
+            
+            <div class="visualizer-container">
                 <canvas id="canvas" width="800" height="450"></canvas>
             </div>
             
@@ -198,36 +328,70 @@
             const selectedRatio = document.querySelector('input[name="aspectRatio"]:checked').value;
             const masterWindow = document.createElement('div');
             masterWindow.id = 'masterWindow';
-            masterWindow.style.position = 'fixed';
-            masterWindow.style.top = '50px';
-            masterWindow.style.left = '50px';
-            masterWindow.style.border = '2px solid #333';
-            masterWindow.style.backgroundColor = '#000';
-            masterWindow.style.zIndex = '1000';
+            
+            const content = document.createElement('div');
+            content.className = 'window-content';
             
             if (selectedRatio === '9:16') {
-                masterWindow.style.width = '360px';
-                masterWindow.style.height = '640px';
-                masterWindow.innerHTML = `
-                    <div style="height: 50%; border-bottom: 1px solid #666; display: flex; align-items: center; justify-content: center; background: #222;">
-                        <div style="width: 100px; height: 100px; border-radius: 50%; background: #666; display: flex; align-items: center; justify-content: center; color: white;">Profile</div>
-                    </div>
-                    <div id="vizSection" style="height: 50%;"></div>
-                `;
-            } else {
-                masterWindow.style.width = '640px';
-                masterWindow.style.height = '360px';
-                masterWindow.innerHTML = `
-                    <div style="display: flex; height: 100%;">
-                        <div id="vizSection" style="width: 50%; border-right: 1px solid #666;"></div>
-                        <div style="width: 50%; display: flex; align-items: center; justify-content: center; background: #222;">
-                            <div style="width: 100px; height: 100px; border-radius: 50%; background: #666; display: flex; align-items: center; justify-content: center; color: white;">Profile</div>
-                        </div>
-                    </div>
-                `;
+                content.style.flexDirection = 'column';
             }
             
+            const vizSection = document.createElement('div');
+            vizSection.id = 'vizSection';
+            
+            const profileSection = document.createElement('div');
+            profileSection.className = 'profile-section';
+            
+            const profilePic = document.createElement('div');
+            profilePic.className = 'profile-pic';
+            
+            // Try to get user's profile picture
+            const userPhoto = window.currentUser?.googlePhoto || window.currentUser?.facebookPhoto;
+            if (userPhoto) {
+                const img = document.createElement('img');
+                img.src = userPhoto;
+                img.alt = 'Profile Picture';
+                img.onerror = () => {
+                    img.style.display = 'none';
+                    profilePic.textContent = window.currentUser?.username?.charAt(0) || 'P';
+                };
+                profilePic.appendChild(img);
+            } else {
+                profilePic.textContent = window.currentUser?.username?.charAt(0) || 'P';
+            }
+            
+            profileSection.appendChild(profilePic);
+            
+            if (selectedRatio === '9:16') {
+                content.appendChild(profileSection);
+                content.appendChild(vizSection);
+            } else {
+                content.appendChild(vizSection);
+                content.appendChild(profileSection);
+            }
+            
+            masterWindow.appendChild(content);
+            
             document.body.appendChild(masterWindow);
+            
+            // Move canvas to vizSection
+            canvas.style.width = '100%';
+            canvas.style.height = '100%';
+            vizSection.appendChild(canvas);
+            
+            // Update canvas dimensions
+            const rect = vizSection.getBoundingClientRect();
+            canvas.width = rect.width;
+            canvas.height = rect.height;
+            
+            // Setup resize observer for responsive canvas
+            const resizeObserver = new ResizeObserver(entries => {
+                for (const entry of entries) {
+                    canvas.width = entry.contentRect.width;
+                    canvas.height = entry.contentRect.height;
+                }
+            });
+            resizeObserver.observe(vizSection);
         }
 
         function draw() {
@@ -237,17 +401,22 @@
             
             analyser.getByteFrequencyData(dataArray);
             
-            ctx.fillStyle = 'rgb(0, 0, 0)';
-            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            // Make background transparent to show profile picture
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
             
             let barHeight;
             let x = 0;
             const barWidth = (canvas.width / dataArray.length) * 2.5;
             
+            // Draw with a gradient effect
             for (const value of dataArray) {
                 barHeight = value / 255 * canvas.height;
                 
-                ctx.fillStyle = `rgb(${barHeight + 100}, 50, 50)`;
+                const gradient = ctx.createLinearGradient(x, canvas.height - barHeight, x, canvas.height);
+                gradient.addColorStop(0, 'rgba(255, 50, 50, 0.8)');
+                gradient.addColorStop(1, 'rgba(255, 50, 50, 0.2)');
+                
+                ctx.fillStyle = gradient;
                 ctx.fillRect(x, canvas.height - barHeight, barWidth, barHeight);
                 
                 x += barWidth + 1;
@@ -312,14 +481,16 @@
 
         function toggleAspectRatio() {
             const selectedRatio = document.querySelector('input[name="aspectRatio"]:checked').value;
-            const canvas = document.getElementById('canvas');
             
-            if (selectedRatio === '9:16') {
-                canvas.width = 450;
-                canvas.height = 800;
-            } else {
-                canvas.width = 800;
-                canvas.height = 450;
+            // Remove existing master window if it exists
+            const existingMaster = document.getElementById('masterWindow');
+            if (existingMaster) {
+                existingMaster.remove();
+            }
+            
+            // Recreate master window with new ratio if visualizer is running
+            if (isRunning) {
+                createMasterWindow();
             }
         };
         
@@ -419,6 +590,7 @@
     </script>
     <script src="auth.js"></script>
     <script src="ad-control.js"></script>
+    <script src="header-init.js"></script>
     <script src="dist/header.js"></script>
 </body>
 </html>

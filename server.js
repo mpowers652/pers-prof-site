@@ -1233,13 +1233,8 @@ app.post('/privacy-policy/detect-changes', express.json(), async (req, res) => {
 
 // Root route serves main page
 app.get('/', (req, res) => {
-    const user = getUserFromReq(req) || { username: 'Guest', role: 'user' };
-    let html = fs.readFileSync(path.join(__dirname, 'index.html'), 'utf8');
-    const header = fs.readFileSync(path.join(__dirname, 'header.html'), 'utf8');
-    const userScript = `<script>window.currentUser = ${JSON.stringify(user)};</script>`;
-    html = html.replace('</head>', `${userScript}</head>`);
-    html = html.replace('<div id="root">', `${header}<div id="root">`);
-    res.send(html);
+    // Serve index.html as-is; client-side header-init.js will populate window.currentUser
+    res.sendFile(path.join(__dirname, 'index.html'));
 });
 
 // SPA fallback: serve index.html for all non-API, non-static GET routes
@@ -1248,13 +1243,7 @@ SPA_ROUTES.forEach(route => {
     app.get(route, (req, res, next) => {
         // Only handle if not an API or static file
         if (req.path.startsWith('/api') || req.path.startsWith('/auth') || req.path.startsWith('/admin')) return next();
-        const user = getUserFromReq(req) || { username: 'Guest', role: 'user' };
-        let html = fs.readFileSync(path.join(__dirname, 'index.html'), 'utf8');
-        const header = fs.readFileSync(path.join(__dirname, 'header.html'), 'utf8');
-        const userScript = `<script>window.currentUser = ${JSON.stringify(user)};</script>`;
-        html = html.replace('</head>', `${userScript}</head>`);
-        html = html.replace('<div id="root">', `${header}<div id="root">`);
-        res.send(html);
+        res.sendFile(path.join(__dirname, 'index.html'));
     });
 });
 
@@ -1263,13 +1252,8 @@ app.get('*', (req, res, next) => {
     if (req.method !== 'GET') return next();
     if (req.path.startsWith('/api') || req.path.startsWith('/auth') || req.path.startsWith('/admin')) return next();
     // If the requested path matches an existing static file, let express.static handle it earlier.
-    const user = getUserFromReq(req) || { username: 'Guest', role: 'user' };
-    let html = fs.readFileSync(path.join(__dirname, 'index.html'), 'utf8');
-    const header = fs.readFileSync(path.join(__dirname, 'header.html'), 'utf8');
-    const userScript = `<script>window.currentUser = ${JSON.stringify(user)};</script>`;
-    html = html.replace('</head>', `${userScript}</head>`);
-    html = html.replace('<div id="root">', `${header}<div id="root">`);
-    res.send(html);
+    // Serve the SPA shell for unknown GET routes; client will hydrate and header-init will request /auth/whoami
+    res.sendFile(path.join(__dirname, 'index.html'));
 });
 
 
@@ -1346,11 +1330,19 @@ function startServer(port) {
 }
 
 if (process.env.NODE_ENV !== 'test') {
+    console.log('Starting loadPermanentSecrets...');
     loadPermanentSecrets().then(() => {
+        console.log('loadPermanentSecrets resolved');
         try {
+            console.log('Initializing passport...');
             initializePassport();
+            console.log('Passport initialized');
+            console.log('Initializing policy monitoring...');
             initializePolicyMonitoring();
+            console.log('Policy monitoring initialized');
+            console.log('Starting server...');
             const server = startServer(PORT);
+            console.log('Server startServer returned');
             
             server.on('error', (error) => {
                 console.error('Server error:', error);
@@ -1368,11 +1360,13 @@ if (process.env.NODE_ENV !== 'test') {
     });
 } else {
     // Initialize passport and policy monitoring for test mode
+    console.log('Test mode: initializing passport and policy monitoring');
     initializePassport();
     initializePolicyMonitoring();
     if (process.env.NODE_ENV === 'production') {
         // Allow production mode testing
         loadPermanentSecrets().then(() => {
+            console.log('Test-mode loadPermanentSecrets resolved - starting server');
             startServer(PORT);
         }).catch(console.error);
     }

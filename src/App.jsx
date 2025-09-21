@@ -7,7 +7,6 @@ import LoginPage from './LoginPage';
 function App() {
   return (
     <Router>
-      <Header />
       <main style={{ maxWidth: '1200px', margin: '0 auto', padding: '2rem' }}>
         <Routes>
           <Route path="/login" element={<LoginPage />} />
