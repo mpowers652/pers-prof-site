@@ -144,7 +144,30 @@
                     document.getElementById('story-output').innerHTML = `<div class="error">${data.error}</div>`;
                 }
             } else {
-                document.getElementById('story-output').innerHTML = `<div class="story-result"><h3>Your Story:</h3><p>${data.story}</p></div>`;
+                const storyHtml = `
+                    <div class="story-result">
+                        <div style="display: flex; justify-content: flex-end; gap: 10px; margin-bottom: 10px;">
+                            <button onclick="downloadStory()" class="btn" style="padding: 5px 10px;">
+                                <span style="margin-right: 5px;">📥</span> Download
+                            </button>
+                            <button onclick="printStory()" class="btn" style="padding: 5px 10px;">
+                                <span style="margin-right: 5px;">🖨️</span> Print
+                            </button>
+                        </div>
+                        <h3>Your Story:</h3>
+                        <div class="story-scroll-area">
+                            <p>${data.story}</p>
+                        </div>
+                    </div>`;
+                
+                document.getElementById('story-output').innerHTML = storyHtml;
+                
+                // Store the current story in a variable for download/print
+                window.currentStory = {
+                    text: data.story,
+                    adjective: adjective,
+                    subject: subject
+                };
                 
                 // Add viable custom options to lists
                 if (data.customAdded) {
@@ -165,6 +188,76 @@
                     updateSubjects();
                 }
             }
+        }
+
+        function downloadStory() {
+            if (!window.currentStory) return;
+            
+            const title = `${window.currentStory.adjective}-${window.currentStory.subject}`.replace(/[^a-z0-9]/gi, '-').toLowerCase();
+            const content = window.currentStory.text;
+            
+            // Create blob with the story content
+            const blob = new Blob([content], { type: 'text/plain' });
+            const url = window.URL.createObjectURL(blob);
+            
+            // Create temporary link and trigger download
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `${title}-story.txt`;
+            document.body.appendChild(a);
+            a.click();
+            
+            // Cleanup
+            window.URL.revokeObjectURL(url);
+            document.body.removeChild(a);
+        }
+
+        function printStory() {
+            if (!window.currentStory) return;
+            
+            // Create a new window for printing
+            const printWindow = window.open('', '', 'height=600,width=800');
+            
+            // Create the print document
+            printWindow.document.write(`
+                <!DOCTYPE html>
+                <html>
+                <head>
+                    <title>${window.currentStory.adjective} Story about ${window.currentStory.subject}</title>
+                    <style>
+                        body {
+                            font-family: Arial, sans-serif;
+                            line-height: 1.6;
+                            margin: 40px;
+                        }
+                        h1 {
+                            color: #333;
+                            border-bottom: 1px solid #ccc;
+                            padding-bottom: 10px;
+                        }
+                        .story {
+                            white-space: pre-wrap;
+                            margin-top: 20px;
+                        }
+                        @media print {
+                            body { margin: 20px; }
+                        }
+                    </style>
+                </head>
+                <body>
+                    <h1>${window.currentStory.adjective} Story about ${window.currentStory.subject}</h1>
+                    <div class="story">${window.currentStory.text}</div>
+                </body>
+                </html>
+            `);
+            
+            printWindow.document.close();
+            
+            // Wait for resources to load then print
+            printWindow.onload = function() {
+                printWindow.print();
+                printWindow.close();
+            };
         }
     </script>
     <script src="header-init.js"></script>

@@ -8,7 +8,26 @@
 </head>
 <body>
     <div id="header-root"></div>
-    <div id="root"></div>
+    <div id="profile-section" class="profile-section">
+        <div class="profile-picture">
+            <img id="profile-img" class="profile-img" alt="Profile" style="display: none;">
+            <div id="profile-placeholder" class="profile-placeholder">No profile photo</div>
+        </div>
+        <input type="file" id="profile-upload" class="file-input" accept="image/*">
+        <button id="upload-btn" class="btn" onclick="document.getElementById('profile-upload').click()">Upload Photo</button>
+        <button id="remove-btn" class="btn" onclick="removeProfilePhoto()" style="display: none;">Remove Photo</button>
+    </div>
+    <div id="root">
+        <main>
+            <section id="services">
+                <h2>Available Services</h2>
+                <div class="services-grid" id="services-grid">
+                    <!-- Services will be populated by JavaScript -->
+                </div>
+            </section>
+        </main>
+    </div>
+    <script src="script.js"></script>
     <script src="header-init.js"></script>
     <script src="dist/header.js"></script>
 </body>

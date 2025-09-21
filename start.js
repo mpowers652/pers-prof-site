@@ -11,6 +11,10 @@ function startServer() {
     console.log('Current directory:', __dirname);
     console.log('Checking if server.js exists:', fs.existsSync(path.join(__dirname, 'server.js')));
     
+    // Don't force NODE_ENV to 'production' here. Respect the caller's environment
+    // so running `npm start` locally doesn't accidentally enable production-only
+    // behavior like using the live OAuth callback URLs. If you want production
+    // mode, set NODE_ENV=production in the environment before running.
     serverProcess = spawn('node', ['server.js'], {
         stdio: 'inherit',
         cwd: __dirname,

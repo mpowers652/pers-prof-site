@@ -13,6 +13,11 @@ try {
 } catch (e) {
     // In test env, DOM may be mocked — ignore
 }
+try {
+    initializeServices();
+} catch (e) {
+    // In test env, DOM may be mocked — ignore
+}
 
 // Check user authentication status
 function checkAuthentication() {
@@ -140,6 +145,144 @@ function getCookie(name) {
     const parts = value.split(`; ${name}=`);
     if (parts.length === 2) return parts.pop().split(';').shift();
     return null;
+}
+
+// Profile photo upload functionality
+function handleProfileUpload() {
+    const fileInput = document.getElementById('profile-upload');
+    if (!fileInput) return;
+    
+    fileInput.addEventListener('change', function(e) {
+        const file = e.target.files[0];
+        if (!file) return;
+        
+        // Validate file type
+        if (!file.type.startsWith('image/')) {
+            alert('Please select an image file.');
+            return;
+        }
+        
+        // Validate file size (max 5MB)
+        if (file.size > 5 * 1024 * 1024) {
+            alert('Image must be smaller than 5MB.');
+            return;
+        }
+        
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            const dataUrl = e.target.result;
+            
+            // Update current user with custom photo
+            if (window.currentUser) {
+                window.currentUser.customPhoto = dataUrl;
+                updateUserInterface();
+                
+                // Save to localStorage for persistence
+                localStorage.setItem('customProfilePhoto', dataUrl);
+            }
+        };
+        reader.readAsDataURL(file);
+    });
+}
+
+// Remove profile photo
+function removeProfilePhoto() {
+    if (window.currentUser) {
+        delete window.currentUser.customPhoto;
+        updateUserInterface();
+        
+        // Remove from localStorage
+        localStorage.removeItem('customProfilePhoto');
+    }
+}
+
+// Load custom photo from localStorage on page load
+function loadCustomPhoto() {
+    const savedPhoto = localStorage.getItem('customProfilePhoto');
+    if (savedPhoto && window.currentUser) {
+        window.currentUser.customPhoto = savedPhoto;
+    }
+}
+
+// Initialize services grid
+function initializeServices() {
+    const services = [
+        {
+            name: 'Math Calculator',
+            description: 'Advanced mathematical calculator with support for complex expressions, functions, and history.',
+            url: '/math',
+            icon: '🧮'
+        },
+        {
+            name: 'FFT Visualizer',
+            description: 'Interactive Fast Fourier Transform visualization tool for signal analysis.',
+            url: '/fft-visualizer',
+            icon: '📊'
+        },
+        {
+            name: 'Story Generator',
+            description: 'AI-powered story generator with customizable themes and word counts.',
+            url: '/story-generator',
+            icon: '📚',
+            premium: true
+        },
+        {
+            name: 'Contact Form',
+            description: 'Get in touch with questions, feedback, or collaboration opportunities.',
+            url: '/contact',
+            icon: '📧'
+        },
+        {
+            name: 'Subscription',
+            description: 'Upgrade to premium for access to advanced features and AI services.',
+            url: '/subscription',
+            icon: '⭐'
+        }
+    ];
+    
+    const servicesGrid = document.getElementById('services-grid');
+    if (!servicesGrid) return;
+    
+    services.forEach(service => {
+        const serviceCard = document.createElement('div');
+        serviceCard.className = 'service-card';
+        if (service.premium) {
+            serviceCard.classList.add('premium-required');
+        }
+        
+        serviceCard.innerHTML = `
+            <div class="service-icon">${service.icon}</div>
+            <h3>${service.name}</h3>
+            <p>${service.description}</p>
+            ${service.premium ? '<span class="premium-badge">Premium</span>' : ''}
+        `;
+        
+        serviceCard.onclick = () => {
+            if (service.premium && service.url === '/story-generator') {
+                checkStoryAccess();
+            } else {
+                try { 
+                    window.location.href = service.url; 
+                } catch (e) { 
+                    /* ignore jsdom navigation */ 
+                }
+            }
+        };
+        
+        servicesGrid.appendChild(serviceCard);
+    });
+}
+
+// Initialize profile upload when DOM is ready
+try {
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', handleProfileUpload);
+    } else {
+        handleProfileUpload();
+    }
+    loadCustomPhoto();
+} catch (e) {
+    // In test env, DOM may be mocked — ignore
 }
 
 // Expose functions globally for testing
