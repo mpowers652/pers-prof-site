@@ -593,6 +593,10 @@ footer a:hover {
     margin-bottom: 1rem;
 }
 
+.form-actions {
+    margin-top: 1rem;
+}
+
 .auth-form input {
     width: 100%;
     padding: 0.8rem;
