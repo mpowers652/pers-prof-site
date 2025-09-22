@@ -27,15 +27,28 @@ function checkAuthentication() {
         updateUserInterface();
     } else {
         // Fallback to API call if no injected data
-        const token = localStorage.getItem('token') || getCookie('token');
+        const token = localStorage.getItem('token');
+
+        // If no JS token present, attempt cookie/session-based verify first so
+        // that httpOnly cookies set by the server are honored. Only redirect to
+        // /login if verify fails.
         if (!token) {
-            // In test environments jsdom doesn't implement navigation; fallback to no-op
-            if (typeof window !== 'undefined' && window.location && typeof window.location.href !== 'undefined') {
+            fetch('/auth/verify', { credentials: 'include', _suppressAuthRedirect: true })
+            .then(response => {
+                if (response.ok) return response.json();
+                throw new Error('No session');
+            })
+            .then(data => {
+                currentUser = data.user || data;
+                updateUserInterface();
+            })
+            .catch(() => {
+                // No session cookie either, redirect to login
                 try { window.location.href = '/login'; } catch (e) { /* ignore jsdom navigation */ }
-            }
+            });
             return;
         }
-        
+
         fetch('/auth/verify', {
             headers: {
                 'Authorization': `Bearer ${token}`
@@ -71,6 +84,25 @@ function updateUserInterface() {
                 <span class="role-badge">${currentUser.role}</span>
             </div>
         `;
+    }
+    
+    // Update main profile section
+    const profileImg = document.getElementById('profile-img');
+    const profilePlaceholder = document.getElementById('profile-placeholder');
+    const removeBtn = document.getElementById('remove-btn');
+    
+    if (profileImg && profilePlaceholder) {
+        if (currentUser && (currentUser.googlePhoto || currentUser.facebookPhoto || currentUser.customPhoto)) {
+            const photoUrl = currentUser.customPhoto || currentUser.googlePhoto || currentUser.facebookPhoto;
+            profileImg.src = photoUrl;
+            profileImg.style.display = 'block';
+            profilePlaceholder.style.display = 'none';
+            if (removeBtn) removeBtn.style.display = 'inline-block';
+        } else {
+            profileImg.style.display = 'none';
+            profilePlaceholder.style.display = 'block';
+            if (removeBtn) removeBtn.style.display = 'none';
+        }
     }
 }
 
@@ -290,4 +322,14 @@ if (typeof global !== 'undefined') {
     global.checkServiceStatus = checkServiceStatus;
     global.addService = addService;
     global.checkStoryAccess = checkStoryAccess;
+    global.updateUserInterface = updateUserInterface;
+    global.removeProfilePhoto = removeProfilePhoto;
+    global.initializeServices = initializeServices;
+}
+
+// Also expose to window for browser environment
+if (typeof window !== 'undefined') {
+    window.updateUserInterface = updateUserInterface;
+    window.removeProfilePhoto = removeProfilePhoto;
+    window.initializeServices = initializeServices;
 }

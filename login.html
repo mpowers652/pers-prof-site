@@ -102,6 +102,9 @@
                 if (data.token && data.token.split('.').length === 3) {
                     try {
                         JSON.parse(atob(data.token.split('.')[1]));
+                        localStorage.setItem('token', data.token);
+                        // Clear guest marker if present
+                        localStorage.removeItem('userType');
                         setTimeout(() => {
                             window.location.replace('/');
                         }, 100);

@@ -1,4 +1,25 @@
 require('dotenv').config();
+
+// Global error handlers to capture crashes and print stacks for diagnostics
+process.on('uncaughtException', (err) => {
+    console.error('UNCAUGHT EXCEPTION:', err && err.stack ? err.stack : err);
+    // allow logs to flush then exit with non-zero code
+    try { process.exit(1); } catch (e) { /* ignore */ }
+});
+
+process.on('unhandledRejection', (reason, promise) => {
+    console.error('UNHANDLED REJECTION at:', promise, 'reason:', reason);
+    try { process.exit(1); } catch (e) { /* ignore */ }
+});
+
+process.on('SIGINT', () => {
+    console.log('Process received SIGINT, exiting gracefully...');
+    process.exit(0);
+});
+process.on('SIGTERM', () => {
+    console.log('Process received SIGTERM, exiting gracefully...');
+    process.exit(0);
+});
 const { SecretManagerServiceClient } = require('@google-cloud/secret-manager');
 const express = require('express');
 const https = require('https');
@@ -251,13 +272,22 @@ passport.deserializeUser((id, done) => {
 // Authentication middleware with auto-refresh
 function requireAuth(req, res, next) {
     const token = req.headers.authorization?.split(' ')[1] || req.cookies.token || req.session?.authToken;
-        const isGuest = req.headers['x-user-type'] === 'guest' || req.query.guest === 'true' || req.path === '/login';
+    const isGuest = req.headers['x-user-type'] === 'guest' || req.query.guest === 'true';
     
-    if (token || isGuest || req.path === '/login' || req.path === '/register' || req.path.startsWith('/auth/')) {
+    // Allow access to public routes without authentication
+    const publicRoutes = ['/login', '/register', '/auth/', '/images/', '/style.css', '/script.js', '/header-init.js', '/dist/', '/math', '/fft-visualizer', '/contact', '/subscription', '/privacy-policy', '/'];
+    const isPublicRoute = publicRoutes.some(route => req.path.startsWith(route)) || req.path === '/';
+    
+    if (token || isGuest || isPublicRoute) {
         return next();
     }
     
-    res.redirect('/login');
+    // Only redirect to login for protected routes that require authentication
+    if (req.path === '/story-generator') {
+        return res.redirect('/login');
+    }
+    
+    next();
 }
 
 

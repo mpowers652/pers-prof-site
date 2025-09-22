@@ -222,13 +222,15 @@ window.fetch = function(url, options = {}) {
         // a flash-to-login race (scripts that run during initial load may
         // trigger 401s before the session cookie is established).
         const authResult = handleAuthResponse(response);
-        if (authResult.requiresLogin && !window.location.pathname.includes('/login')) {
+        const suppress = options._suppressAuthRedirect || (typeof document !== 'undefined' && document.readyState !== 'complete');
+        if (!suppress && authResult.requiresLogin && !window.location.pathname.includes('/login')) {
             window.location.href = authResult.redirectTo;
         }
         return response;
     }).catch(error => {
         const authResult = handleAuthResponse(error);
-        if (authResult.requiresLogin && !window.location.pathname.includes('/login')) {
+        const suppress = options && (options._suppressAuthRedirect || (typeof document !== 'undefined' && document.readyState !== 'complete')) || false;
+        if (!suppress && authResult.requiresLogin && !window.location.pathname.includes('/login')) {
             window.location.href = authResult.redirectTo;
         }
         throw error;

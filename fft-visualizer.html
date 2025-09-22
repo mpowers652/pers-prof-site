@@ -482,8 +482,6 @@
         }
 
         function toggleAspectRatio() {
-            const selectedRatio = document.querySelector('input[name="aspectRatio"]:checked').value;
-            
             // Remove existing master window if it exists
             const existingMaster = document.getElementById('masterWindow');
             if (existingMaster) {
@@ -500,28 +498,63 @@
         // verify (httpOnly cookie) and fall back to Authorization header using
         // localStorage token. Suppress automatic auth redirects while verifying.
         async function checkSubscription() {
-            const token = localStorage.getItem('token');
-            const userType = localStorage.getItem('userType');
-            
-            // Don't show for guests
-            if (userType === 'guest' || !token) return;
-            
-            try {
-                const response = await fetch('/auth/verify', {
-                    headers: { 'Authorization': `Bearer ${token}` }
-                });
-                const data = await response.json();
-                if (data.user && data.user.subscription === 'full') {
-                    document.getElementById('storySection').style.display = 'block';
+            const storyEl = document.getElementById('storySection');
+
+            // Fast path: server-injected user
+            if (window.currentUser) {
+                const u = window.currentUser;
+                if (u.subscription === 'full' || u.role === 'admin') {
+                    storyEl.classList.remove('hidden');
+                } else {
+                    storyEl.classList.add('hidden');
                 }
-            } catch (error) {
-                console.log('Subscription check failed');
-                console.error(error);
+                return;
             }
+
+            // Try cookie/session-based verify first (sends httpOnly token cookie)
+            try {
+                const resp = await fetch('/auth/verify', { credentials: 'include', _suppressAuthRedirect: true });
+                if (resp.ok) {
+                    const payload = await resp.json();
+                    const user = payload.user || payload;
+                    if (user && (user.subscription === 'full' || user.role === 'admin')) {
+                        storyEl.classList.remove('hidden');
+                        return;
+                    }
+                    storyEl.classList.add('hidden');
+                    return;
+                }
+            } catch (err) {
+                console.debug('cookie verify failed:', err && err.message);
+            }
+
+            // Fallback: try token stored in localStorage
+            const token = localStorage.getItem('token');
+            if (token) {
+                try {
+                    const resp2 = await fetch('/auth/verify', { headers: { 'Authorization': `Bearer ${token}` }, _suppressAuthRedirect: true });
+                    if (resp2.ok) {
+                        const payload = await resp2.json();
+                        const user = payload.user || payload;
+                        if (user && (user.subscription === 'full' || user.role === 'admin')) {
+                            storyEl.classList.remove('hidden');
+                            return;
+                        }
+                    }
+                } catch (err) {
+                    console.debug('token verify failed:', err && err.message);
+                }
+            }
+
+            // No valid session/token found
+            storyEl.classList.add('hidden');
         }
-        
-        // Check subscription after page loads
+
+        // Run check on load and when localStorage changes (e.g. login in another tab)
         window.addEventListener('load', checkSubscription);
+        window.addEventListener('storage', (e) => {
+            if (e.key === 'token' || e.key === 'userType') checkSubscription();
+        });
         
         // Story Generator Functions
         const scarySubjects = ['urban legends', 'haunted technology', 'cryptids', 'werewolves', 'zombies', 'vampires'];
@@ -575,14 +608,18 @@
             
             document.getElementById('story-display').innerHTML = '<div class="loading">Generating story...</div>';
             
-            const response = await fetch('/story/generate', {
+            const headers = { 'Content-Type': 'application/json' };
+            const storedToken = localStorage.getItem('token');
+            const fetchOptions = {
                 method: 'POST',
-                headers: { 
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${token}`
-                },
-                body: JSON.stringify({ adjective, wordCount, subject })
-            });
+                headers,
+                body: JSON.stringify({ adjective, wordCount, subject }),
+                // prefer sending cookies so the server-side session/cookie is used when present
+                credentials: 'include'
+            };
+            if (storedToken) headers['Authorization'] = `Bearer ${storedToken}`;
+
+            const response = await fetch('/story/generate', fetchOptions);
             
             const data = await response.json();
             if (data.error) {
