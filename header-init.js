@@ -34,24 +34,24 @@
         // If synchronous XHR fails (e.g. blocked in some environments),
         // fall back to an async fetch to populate window.currentUser.
         (async function() {
-    try {
-        const resp = await fetch('/auth/whoami', { credentials: 'include' });
-        if (resp.status === 204) {
-            window.currentUser = null;
-            return;
-        }
-        if (!resp.ok) {
-            window.currentUser = null;
-            return;
-        }
-        const data = await resp.json();
+            try {
+                const resp = await fetch('/auth/whoami', { credentials: 'include' });
+                if (resp.status === 204) {
+                    window.currentUser = null;
+                    return;
+                }
+                if (!resp.ok) {
+                    window.currentUser = null;
+                    return;
+                }
+                const data = await resp.json();
                 const user = data?.user ?? (data?.username ? data : null);
                 window.currentUser = user;
             } catch (fetchErr) {
                 // Non-fatal: header can render with Guest fallback. Log for visibility.
                 // Avoid throwing so page render is not blocked.
                 console.debug('header-init: async whoami failed', fetchErr);
-        window.currentUser = null;
+                window.currentUser = null;
             }
         })();
     }

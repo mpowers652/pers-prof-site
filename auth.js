@@ -217,6 +217,10 @@ window.fetch = function(url, options = {}) {
         options.credentials = options.credentials || 'include';
     }
     return originalFetch(url, options).then(response => {
+        // Only perform automatic redirect when the caller hasn't opted out.
+        // Also avoid redirecting while the page is still loading to prevent
+        // a flash-to-login race (scripts that run during initial load may
+        // trigger 401s before the session cookie is established).
         const authResult = handleAuthResponse(response);
         if (authResult.requiresLogin && !window.location.pathname.includes('/login')) {
             window.location.href = authResult.redirectTo;

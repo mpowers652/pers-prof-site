@@ -167,7 +167,7 @@
                 <canvas id="canvas" width="800" height="450"></canvas>
             </div>
             
-            <div class="story-section" id="storySection" style="display:none">
+            <div class="story-section hidden" id="storySection">
                 <h3>Story Generator</h3>
                 <div class="story-controls">
                     <select title="adjective" id="adjective" onchange="updateSubjects()">
@@ -496,7 +496,9 @@
             }
         };
         
-        // Check subscription and show story generator
+        // Check subscription and show story generator. Prefer cookie/session-based
+        // verify (httpOnly cookie) and fall back to Authorization header using
+        // localStorage token. Suppress automatic auth redirects while verifying.
         async function checkSubscription() {
             const token = localStorage.getItem('token');
             const userType = localStorage.getItem('userType');

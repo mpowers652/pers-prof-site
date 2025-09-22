@@ -18,7 +18,7 @@ function startServer() {
     serverProcess = spawn('node', ['server.js'], {
         stdio: 'inherit',
         cwd: __dirname,
-        env: { ...process.env, NODE_ENV: 'production' }
+        env: { ...process.env }
     });
     
     if (serverProcess) {
