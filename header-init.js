@@ -17,15 +17,11 @@
         }
 
         if (xhr.status >= 200 && xhr.status < 300) {
-            try {
-                const data = JSON.parse(xhr.responseText);
-                // Accept either { user: { ... } } or the user object directly
-                const user = data?.user ?? (data?.username ? data : null);
-                window.currentUser = user;
-            } catch (parseErr) {
-                console.debug('header-init: failed to parse whoami response', parseErr);
-                window.currentUser = null;
-            }
+            const data = JSON.parse(xhr.responseText);
+            // Accept either { user: { ... } } or the user object directly
+            const user = data?.user ?? (data?.username ? data : null);
+            window.currentUser = user;
+            window.dispatchEvent(new Event('auth:updated'));
             return;
         }
 
@@ -47,6 +43,7 @@
                 const data = await resp.json();
                 const user = data?.user ?? (data?.username ? data : null);
                 window.currentUser = user;
+                window.dispatchEvent(new Event('auth:updated'));
             } catch (fetchErr) {
                 // Non-fatal: header can render with Guest fallback. Log for visibility.
                 // Avoid throwing so page render is not blocked.

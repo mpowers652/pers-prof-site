@@ -6,6 +6,7 @@
     <meta name="google-adsense-account" content="ca-pub-7284206181717863">
     <title>FFT Audio Visualizer - Matt Powers</title>
     <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="components/StoryGenerator.css">
     <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-7284206181717863" crossorigin="anonymous"></script>
     <style>
         /* Utility to hide elements via class instead of inline styles */
@@ -60,10 +61,6 @@
             background-color: rgba(0, 0, 0, 0.9);
             box-shadow: 0 0 20px rgba(0,0,0,0.5);
             overflow: hidden;
-            width: 80vw;
-            max-width: 1200px;
-            height: 60vh;
-            max-height: 800px;
             border-radius: 8px;
         }
 
@@ -106,7 +103,6 @@
             align-items: center;
             justify-content: center;
             color: white;
-            border: 3px solid rgba(68, 68, 68, 0.8);
             box-shadow: 0 0 20px rgba(0,0,0,0.3);
             overflow: hidden;
         }
@@ -115,6 +111,21 @@
             width: 100%;
             height: 100%;
             object-fit: cover;
+        }
+
+        .story-section {
+            background: rgba(255, 255, 255, 0.1);
+            padding: 2rem;
+            margin: 2rem 0;
+            border-radius: 8px;
+            border: 2px solid #007bff;
+        }
+
+        .story-controls {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 1rem;
+            margin-bottom: 1rem;
         }
 
         /* Responsive adjustments */
@@ -159,7 +170,6 @@
                         <label><input type="radio" name="downloadType" value="both" disabled> Both Audio and Video</label>
                     </div>
                     <button id="downloadBtn" class="btn" disabled>Download</button>
-                    <button id="downloadViz" class="btn">Download Visualization</button>
                 </div>
             </div>
             
@@ -167,39 +177,9 @@
                 <canvas id="canvas" width="800" height="450"></canvas>
             </div>
             
-            <div class="story-section hidden" id="storySection">
-                <h3>Story Generator</h3>
-                <div class="story-controls">
-                    <select title="adjective" id="adjective" onchange="updateSubjects()">
-                        <option value="">Select adjective...</option>
-                        <option value="funny">Funny</option>
-                        <option value="sweet">Sweet</option>
-                        <option value="scary">Scary</option>
-                        <option value="bedtime">Bedtime</option>
-                        <option value="custom">Custom...</option>
-                    </select>
-                    <input type="text" id="customAdjective" placeholder="Enter custom adjective">
-
-                    <select title="wordCount" id="wordCount">
-                        <option value="">Select word count...</option>
-                        <option value="200">200</option>
-                        <option value="500">500</option>
-                        <option value="1000">1000</option>
-                        <option value="custom">Custom...</option>
-                    </select>
-                    <input type="number" id="customWordCount" placeholder="Enter word count">
-
-                    <select title="subject" id="subject">
-                        <option value="">Select subject...</option>
-                        <option value="custom">Custom...</option>
-                    </select>
-                    <input type="text" id="customSubject" placeholder="Enter custom subject">
-                    
-                    <button onclick="generateStory()" class="btn">Generate Story</button>
-                </div>
-                <div id="story-display"></div>
-            </div>
-        </section>
+            <!-- React Story Generator Mount Point -->
+            <div id="story-generator-mount"></div>
+        </main>
 
         <!-- AdSense Ad Unit -->
         <div class="ad-container">
@@ -222,11 +202,20 @@
         let videoRecorder, videoChunks = [];
         let videoOnlyRecorder, videoOnlyChunks = [];
 
+        // Debug story section visibility
+        console.log('🔍 Story section debugging:');
+        console.log('Story section element:', document.getElementById('storySection'));
+        console.log('Story section visible:', document.getElementById('storySection')?.offsetHeight > 0);
+        
         // Initialize FFT controls after DOM loads
         window.addEventListener('DOMContentLoaded', () => {
+            console.log('✅ DOM loaded - checking story section');
+            const storySection = document.getElementById('storySection');
+            console.log('Story section found:', !!storySection);
+            console.log('Story section styles:', storySection ? getComputedStyle(storySection) : 'not found');
+            
             document.getElementById('startBtn').addEventListener('click', toggleVisualizer);
             document.getElementById('downloadBtn').addEventListener('click', handleDownload);
-            document.getElementById('downloadViz').addEventListener('click', downloadVisualization);
         });
 
         document.querySelectorAll('input[name="aspectRatio"]').forEach(radio => {
@@ -241,52 +230,56 @@
             }
         }
 
+
+
+        function setupAudioContext(stream) {
+            audioContext = new (window.AudioContext || window.webkitAudioContext)();
+            analyser = audioContext.createAnalyser();
+            microphone = audioContext.createMediaStreamSource(stream);
+            
+            analyser.fftSize = 256;
+            const bufferLength = analyser.frequencyBinCount;
+            dataArray = new Uint8Array(bufferLength);
+            
+            microphone.connect(analyser);
+        }
+
+        function setupRecording(stream) {
+            mediaRecorder = new MediaRecorder(stream);
+            mediaRecorder.ondataavailable = e => recordedChunks.push(e.data);
+            
+            recordedChunks = [];
+            videoChunks = [];
+            videoOnlyChunks = [];
+            mediaRecorder.start();
+            
+            const canvasStream = canvas.captureStream(30);
+            const combinedStream = new MediaStream([...canvasStream.getTracks(), ...stream.getTracks()]);
+            
+            videoRecorder = new MediaRecorder(combinedStream);
+            videoRecorder.ondataavailable = e => videoChunks.push(e.data);
+            videoRecorder.start();
+            
+            videoOnlyRecorder = new MediaRecorder(canvasStream);
+            videoOnlyRecorder.ondataavailable = e => videoOnlyChunks.push(e.data);
+            videoOnlyRecorder.start();
+        }
+
         async function startVisualizer() {
             try {
                 const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
                 
-                audioContext = new (window.AudioContext || window.webkitAudioContext)();
-                analyser = audioContext.createAnalyser();
-                microphone = audioContext.createMediaStreamSource(stream);
-                
-                analyser.fftSize = 256;
-                const bufferLength = analyser.frequencyBinCount;
-                dataArray = new Uint8Array(bufferLength);
-                
-                microphone.connect(analyser);
-                
-                // Setup recording
-                mediaRecorder = new MediaRecorder(stream);
-                mediaRecorder.ondataavailable = e => recordedChunks.push(e.data);
+                setupAudioContext(stream);
                 
                 canvas = document.getElementById('canvas');
                 ctx = canvas.getContext('2d');
                 
-                // Create master window
                 createMasterWindow();
                 
                 isRunning = true;
                 document.getElementById('startBtn').textContent = 'Stop';
                 
-                // Auto-start recording
-                recordedChunks = [];
-                videoChunks = [];
-                videoOnlyChunks = [];
-                mediaRecorder.start();
-                
-                const canvasStream = canvas.captureStream(30);
-                const audioStream = mediaRecorder.stream;
-                const combinedStream = new MediaStream([...canvasStream.getTracks(), ...audioStream.getTracks()]);
-                
-                // Video with audio
-                videoRecorder = new MediaRecorder(combinedStream);
-                videoRecorder.ondataavailable = e => videoChunks.push(e.data);
-                videoRecorder.start();
-                
-                // Video only (no audio)
-                videoOnlyRecorder = new MediaRecorder(canvasStream);
-                videoOnlyRecorder.ondataavailable = e => videoOnlyChunks.push(e.data);
-                videoOnlyRecorder.start();
+                setupRecording(stream);
                 
                 isRecording = true;
                 draw();
@@ -295,6 +288,13 @@
                 console.error('Error accessing microphone:', err);
                 isRunning = false;
             }
+        }
+
+        function enableDownloads() {
+            document.querySelectorAll('input[name="downloadType"]').forEach(radio => {
+                radio.disabled = false;
+            });
+            document.getElementById('downloadBtn').disabled = false;
         }
 
         function stopVisualizer() {
@@ -307,15 +307,9 @@
                 videoRecorder.stop();
                 videoOnlyRecorder.stop();
                 isRecording = false;
-                
-                // Enable download options
-                document.querySelectorAll('input[name="downloadType"]').forEach(radio => {
-                    radio.disabled = false;
-                });
-                document.getElementById('downloadBtn').disabled = false;
+                enableDownloads();
             }
             
-            // Remove master window
             const masterWindow = document.getElementById('masterWindow');
             if (masterWindow) {
                 masterWindow.remove();
@@ -326,28 +320,10 @@
             ctx.clearRect(0, 0, canvas.width, canvas.height);
         }
 
-        function createMasterWindow() {
-            const selectedRatio = document.querySelector('input[name="aspectRatio"]:checked').value;
-            const masterWindow = document.createElement('div');
-            masterWindow.id = 'masterWindow';
-            
-            const content = document.createElement('div');
-            content.className = 'window-content';
-            
-            if (selectedRatio === '9:16') {
-                content.style.flexDirection = 'column';
-            }
-            
-            const vizSection = document.createElement('div');
-            vizSection.id = 'vizSection';
-            
-            const profileSection = document.createElement('div');
-            profileSection.className = 'profile-section';
-            
+        function createProfilePic() {
             const profilePic = document.createElement('div');
             profilePic.className = 'profile-pic';
             
-            // Try to get user's profile picture
             const userPhoto = window.currentUser?.googlePhoto || window.currentUser?.facebookPhoto;
             if (userPhoto) {
                 const img = document.createElement('img');
@@ -362,7 +338,58 @@
                 profilePic.textContent = window.currentUser?.username?.charAt(0) || 'P';
             }
             
-            profileSection.appendChild(profilePic);
+            return profilePic;
+        }
+
+        function setupCanvas(vizSection) {
+            canvas.style.width = '100%';
+            canvas.style.height = '100%';
+            vizSection.appendChild(canvas);
+            
+            const rect = vizSection.getBoundingClientRect();
+            canvas.width = rect.width;
+            canvas.height = rect.height;
+            
+            const resizeObserver = new ResizeObserver(entries => {
+                for (const entry of entries) {
+                    canvas.width = entry.contentRect.width;
+                    canvas.height = entry.contentRect.height;
+                }
+            });
+            resizeObserver.observe(vizSection);
+        }
+
+        function createMasterWindow() {
+            const selectedRatio = document.querySelector('input[name="aspectRatio"]:checked').value;
+            const masterWindow = document.createElement('div');
+            masterWindow.id = 'masterWindow';
+            
+            // Set dimensions based on aspect ratio
+            if (selectedRatio === '9:16') {
+                masterWindow.style.width = '60vh';
+                masterWindow.style.height = '80vh';
+                masterWindow.style.maxWidth = '600px';
+                masterWindow.style.maxHeight = '1000px';
+            } else {
+                masterWindow.style.width = '80vw';
+                masterWindow.style.height = '60vh';
+                masterWindow.style.maxWidth = '1200px';
+                masterWindow.style.maxHeight = '800px';
+            }
+            
+            const content = document.createElement('div');
+            content.className = 'window-content';
+            
+            if (selectedRatio === '9:16') {
+                content.style.flexDirection = 'column';
+            }
+            
+            const vizSection = document.createElement('div');
+            vizSection.id = 'vizSection';
+            
+            const profileSection = document.createElement('div');
+            profileSection.className = 'profile-section';
+            profileSection.appendChild(createProfilePic());
             
             if (selectedRatio === '9:16') {
                 content.appendChild(profileSection);
@@ -373,27 +400,9 @@
             }
             
             masterWindow.appendChild(content);
-            
             document.body.appendChild(masterWindow);
             
-            // Move canvas to vizSection
-            canvas.style.width = '100%';
-            canvas.style.height = '100%';
-            vizSection.appendChild(canvas);
-            
-            // Update canvas dimensions
-            const rect = vizSection.getBoundingClientRect();
-            canvas.width = rect.width;
-            canvas.height = rect.height;
-            
-            // Setup resize observer for responsive canvas
-            const resizeObserver = new ResizeObserver(entries => {
-                for (const entry of entries) {
-                    canvas.width = entry.contentRect.width;
-                    canvas.height = entry.contentRect.height;
-                }
-            });
-            resizeObserver.observe(vizSection);
+            setupCanvas(vizSection);
         }
 
         function draw() {
@@ -482,153 +491,23 @@
         }
 
         function toggleAspectRatio() {
-            // Remove existing master window if it exists
             const existingMaster = document.getElementById('masterWindow');
             if (existingMaster) {
                 existingMaster.remove();
             }
             
-            // Recreate master window with new ratio if visualizer is running
             if (isRunning) {
                 createMasterWindow();
             }
-        };
-        
-        // Check subscription and show story generator. Prefer cookie/session-based
-        // verify (httpOnly cookie) and fall back to Authorization header using
-        // localStorage token. Suppress automatic auth redirects while verifying.
-        async function checkSubscription() {
-            const storyEl = document.getElementById('storySection');
-
-            // Fast path: server-injected user
-            if (window.currentUser) {
-                const u = window.currentUser;
-                if (u.subscription === 'full' || u.role === 'admin') {
-                    storyEl.classList.remove('hidden');
-                } else {
-                    storyEl.classList.add('hidden');
-                }
-                return;
-            }
-
-            // Try cookie/session-based verify first (sends httpOnly token cookie)
-            try {
-                const resp = await fetch('/auth/verify', { credentials: 'include', _suppressAuthRedirect: true });
-                if (resp.ok) {
-                    const payload = await resp.json();
-                    const user = payload.user || payload;
-                    if (user && (user.subscription === 'full' || user.role === 'admin')) {
-                        storyEl.classList.remove('hidden');
-                        return;
-                    }
-                    storyEl.classList.add('hidden');
-                    return;
-                }
-            } catch (err) {
-                console.debug('cookie verify failed:', err && err.message);
-            }
-
-            // Fallback: try token stored in localStorage
-            const token = localStorage.getItem('token');
-            if (token) {
-                try {
-                    const resp2 = await fetch('/auth/verify', { headers: { 'Authorization': `Bearer ${token}` }, _suppressAuthRedirect: true });
-                    if (resp2.ok) {
-                        const payload = await resp2.json();
-                        const user = payload.user || payload;
-                        if (user && (user.subscription === 'full' || user.role === 'admin')) {
-                            storyEl.classList.remove('hidden');
-                            return;
-                        }
-                    }
-                } catch (err) {
-                    console.debug('token verify failed:', err && err.message);
-                }
-            }
-
-            // No valid session/token found
-            storyEl.classList.add('hidden');
-        }
-
-        // Run check on load and when localStorage changes (e.g. login in another tab)
-        window.addEventListener('load', checkSubscription);
-        window.addEventListener('storage', (e) => {
-            if (e.key === 'token' || e.key === 'userType') checkSubscription();
-        });
-        
-        // Story Generator Functions
-        const scarySubjects = ['urban legends', 'haunted technology', 'cryptids', 'werewolves', 'zombies', 'vampires'];
-        const otherSubjects = ['puppies', 'kitties', 'chickens', 'a random farm animal'];
-        
-        function updateSubjects() {
-            const adjective = document.getElementById('adjective').value;
-            const subjectSelect = document.getElementById('subject');
-            const customAdj = document.getElementById('customAdjective');
-            
-            customAdj.style.display = adjective === 'custom' ? 'block' : 'none';
-            
-            subjectSelect.innerHTML = '<option value="">Select subject...</option>';
-            const subjects = adjective === 'scary' ? scarySubjects : otherSubjects;
-            
-            subjects.forEach(subject => {
-                subjectSelect.innerHTML += `<option value="${subject}">${subject}</option>`;
-            });
-            subjectSelect.innerHTML += '<option value="custom">Custom...</option>';
         }
         
-        document.getElementById('wordCount').onchange = function() {
-            const custom = document.getElementById('customWordCount');
-            custom.style.display = this.value === 'custom' ? 'block' : 'none';
-        };
-        
-        document.getElementById('subject').onchange = function() {
-            const custom = document.getElementById('customSubject');
-            custom.style.display = this.value === 'custom' ? 'block' : 'none';
-        };
-        
-        async function generateStory() {
-            const token = localStorage.getItem('token');
-            if (!token) {
-                alert('Please log in to generate stories');
-                return;
-            }
-            
-            let adjective = document.getElementById('adjective').value;
-            let wordCount = document.getElementById('wordCount').value;
-            let subject = document.getElementById('subject').value;
-            
-            if (adjective === 'custom') adjective = document.getElementById('customAdjective').value;
-            if (wordCount === 'custom') wordCount = document.getElementById('customWordCount').value;
-            if (subject === 'custom') subject = document.getElementById('customSubject').value;
-            
-            if (!adjective || !wordCount || !subject) {
-                alert('Please fill in all fields');
-                return;
-            }
-            
-            document.getElementById('story-display').innerHTML = '<div class="loading">Generating story...</div>';
-            
-            const headers = { 'Content-Type': 'application/json' };
-            const storedToken = localStorage.getItem('token');
-            const fetchOptions = {
-                method: 'POST',
-                headers,
-                body: JSON.stringify({ adjective, wordCount, subject }),
-                // prefer sending cookies so the server-side session/cookie is used when present
-                credentials: 'include'
-            };
-            if (storedToken) headers['Authorization'] = `Bearer ${storedToken}`;
 
-            const response = await fetch('/story/generate', fetchOptions);
-            
-            const data = await response.json();
-            if (data.error) {
-                document.getElementById('story-display').innerHTML = `<div class="error">${data.error}</div>`;
-            } else {
-                document.getElementById('story-display').innerHTML = `<div class="story-text">${data.story}</div>`;
-            }
-        }
+
+        // The React component will handle its own authentication and visibility
+        
+
     </script>
+    <script src="dist/story-generator.bundle.js"></script>
     <script src="auth.js"></script>
     <script src="ad-control.js"></script>
     <script src="header-init.js"></script>

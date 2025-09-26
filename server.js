@@ -375,11 +375,12 @@ app.post('/story/generate', express.json(), async (req, res) => {
         }
         
         const knownAdjectives = ['funny', 'sweet', 'scary', 'bedtime'];
-        const scarySubjects = ['unaired TV episodes', 'unaired movies', 'urban legends', 'haunted technology', 'cryptids', 'werewolves', 'zombies', 'vampires'];
-        const otherSubjects = ['puppies', 'kitties', 'chickens', 'a random farm animal'];
+        const scarySubjects = ['ghost', 'monster', 'vampire', 'werewolf'];
+        const otherSubjects = ['clown', 'banana', 'robot', 'penguin', 'puppy', 'kitten', 'butterfly', 'rainbow', 'moon', 'star', 'dream', 'pillow'];
         
         const customAdded = {};
         
+        // Only check similarity for truly custom inputs (not in predefined lists)
         if (!knownAdjectives.includes(adjective.toLowerCase())) {
             if (!checkSimilarity(adjective, knownAdjectives)) {
                 return res.status(400).json({ error: 'Custom adjective too similar to existing options' });
@@ -388,7 +389,7 @@ app.post('/story/generate', express.json(), async (req, res) => {
         }
         
         const allSubjects = [...scarySubjects, ...otherSubjects];
-        if (!allSubjects.includes(subject)) {
+        if (!allSubjects.includes(subject.toLowerCase())) {
             if (!checkSimilarity(subject, allSubjects)) {
                 return res.status(400).json({ error: 'Custom subject too similar to existing options' });
             }

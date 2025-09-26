@@ -105,6 +105,7 @@
                         localStorage.setItem('token', data.token);
                         // Clear guest marker if present
                         localStorage.removeItem('userType');
+                        window.dispatchEvent(new Event('auth:updated'));
                         setTimeout(() => {
                             window.location.replace('/');
                         }, 100);

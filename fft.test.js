@@ -42,4 +42,26 @@ describe('FFT Visualizer Tests', () => {
         expect(res.text).toContain('9:16');
         expect(res.text).toContain('name="aspectRatio"');
     });
+
+    test('FFT visualizer page should contain story generator section', async () => {
+        const res = await request(app).get('/fft-visualizer');
+        expect(res.text).toContain('story-section');
+        expect(res.text).toContain('Story Generator');
+        expect(res.text).toContain('id="adjective"');
+        expect(res.text).toContain('id="wordCount"');
+        expect(res.text).toContain('id="subject"');
+        expect(res.text).toContain('generateStory()');
+    });
+
+    test('FFT visualizer page should have story section hidden by default', async () => {
+        const res = await request(app).get('/fft-visualizer');
+        expect(res.text).toContain('story-section hidden');
+    });
+
+    test('FFT visualizer page should contain access control functions', async () => {
+        const res = await request(app).get('/fft-visualizer');
+        expect(res.text).toContain('hasFullAccess');
+        expect(res.text).toContain('toggleStorySection');
+        expect(res.text).toContain('checkSubscription');
+    });
 });

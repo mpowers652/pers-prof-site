@@ -10,12 +10,13 @@
     <div id="header-root"></div>
     <div id="profile-section" class="profile-section">
         <div class="profile-picture">
-            <img id="profile-img" class="profile-img" alt="Profile" style="display: none;">
+            <img id="profile-img" class="profile-img" alt="Profile">
             <div id="profile-placeholder" class="profile-placeholder">No profile photo</div>
         </div>
-        <input type="file" id="profile-upload" class="file-input" accept="image/*">
-        <button id="upload-btn" class="btn" onclick="document.getElementById('profile-upload').click()">Upload Photo</button>
-        <button id="remove-btn" class="btn" onclick="removeProfilePhoto()" style="display: none;">Remove Photo</button>
+        <label for="profile-upload" class="visually-hidden">Upload profile photo</label>
+        <input type="file" id="profile-upload" class="file-input" accept="image/*" aria-label="Upload profile photo" title="Choose a profile photo to upload">
+        <button id="upload-btn" class="btn" onclick="document.getElementById('profile-upload').click()" aria-describedby="profile-upload">Upload Photo</button>
+        <button id="remove-btn" class="btn hidden" onclick="removeProfilePhoto()">Remove Photo</button>
     </div>
     <div id="root">
         <main>
