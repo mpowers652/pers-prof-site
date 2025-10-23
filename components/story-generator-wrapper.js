@@ -17,13 +17,38 @@ export function mountStoryGenerator(containerId, props = {}) {
     return root;
 }
 
+// Function to update user in mounted components
+export function updateStoryGeneratorUser(user) {
+    // Dispatch custom event for components to listen to
+    window.dispatchEvent(new CustomEvent('auth:updated', { 
+        detail: { user } 
+    }));
+}
+
 // Auto-mount if container exists on page load
 document.addEventListener('DOMContentLoaded', () => {
     const container = document.getElementById('story-generator-mount');
     if (container) {
-        mountStoryGenerator('story-generator-mount', {
+        const root = mountStoryGenerator('story-generator-mount', {
             user: window.currentUser,
             showTitle: true
+        });
+        
+        // Re-render when user authentication changes
+        const handleAuthUpdate = () => {
+            if (root && container) {
+                root.render(React.createElement(StoryGenerator, {
+                    user: window.currentUser,
+                    showTitle: true
+                }));
+            }
+        };
+        
+        window.addEventListener('auth:updated', handleAuthUpdate);
+        window.addEventListener('storage', (e) => {
+            if (e.key === 'token' || e.key === 'userType') {
+                handleAuthUpdate();
+            }
         });
     }
 });

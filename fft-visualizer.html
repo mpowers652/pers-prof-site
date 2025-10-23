@@ -95,8 +95,8 @@
         }
 
         .profile-pic {
-            width: 180px;
-            height: 180px;
+            width: 150px;
+            height: 150px;
             border-radius: 50%;
             background: rgba(102, 102, 102, 0.5);
             display: flex;
@@ -105,6 +105,7 @@
             color: white;
             box-shadow: 0 0 20px rgba(0,0,0,0.3);
             overflow: hidden;
+            border: 3px solid #ddd;
         }
 
         .profile-pic img {
@@ -253,14 +254,16 @@
             videoOnlyChunks = [];
             mediaRecorder.start();
             
-            const canvasStream = canvas.captureStream(30);
-            const combinedStream = new MediaStream([...canvasStream.getTracks(), ...stream.getTracks()]);
+            // Create a composite canvas that includes both FFT and profile
+            const compositeCanvas = createCompositeCanvas();
+            const compositeStream = compositeCanvas.captureStream(30);
+            const combinedStream = new MediaStream([...compositeStream.getTracks(), ...stream.getTracks()]);
             
             videoRecorder = new MediaRecorder(combinedStream);
             videoRecorder.ondataavailable = e => videoChunks.push(e.data);
             videoRecorder.start();
             
-            videoOnlyRecorder = new MediaRecorder(canvasStream);
+            videoOnlyRecorder = new MediaRecorder(compositeStream);
             videoOnlyRecorder.ondataavailable = e => videoOnlyChunks.push(e.data);
             videoOnlyRecorder.start();
         }
@@ -324,8 +327,13 @@
             const profilePic = document.createElement('div');
             profilePic.className = 'profile-pic';
             
-            const userPhoto = window.currentUser?.googlePhoto || window.currentUser?.facebookPhoto;
+            let userPhoto = window.currentUser?.customPhoto || window.currentUser?.googlePhoto || window.currentUser?.facebookPhoto;
             if (userPhoto) {
+                // Use proxy for Google profile images to bypass CORS
+                if (userPhoto.includes('googleusercontent.com')) {
+                    userPhoto = `/proxy/image?url=${encodeURIComponent(userPhoto)}`;
+                }
+                
                 const img = document.createElement('img');
                 img.src = userPhoto;
                 img.alt = 'Profile Picture';
@@ -405,6 +413,120 @@
             setupCanvas(vizSection);
         }
 
+        let compositeCanvas, compositeCtx;
+        
+        function createCompositeCanvas() {
+            const selectedRatio = document.querySelector('input[name="aspectRatio"]:checked').value;
+            compositeCanvas = document.createElement('canvas');
+            compositeCtx = compositeCanvas.getContext('2d');
+            
+            // Set canvas dimensions based on selected aspect ratio
+            if (selectedRatio === '9:16') {
+                compositeCanvas.width = 720;  // 9:16 aspect ratio
+                compositeCanvas.height = 1280;
+            } else {
+                compositeCanvas.width = 1920; // 16:9 aspect ratio
+                compositeCanvas.height = 1080;
+            }
+            
+            return compositeCanvas;
+        }
+        
+        function drawComposite() {
+            if (!compositeCanvas || !compositeCtx) return;
+            
+            const selectedRatio = document.querySelector('input[name="aspectRatio"]:checked').value;
+            
+            // Clear composite canvas
+            compositeCtx.fillStyle = 'rgba(26, 26, 26, 1)';
+            compositeCtx.fillRect(0, 0, compositeCanvas.width, compositeCanvas.height);
+            
+            let fftArea, profileArea;
+            
+            if (selectedRatio === '9:16') {
+                // Stacked layout
+                profileArea = { x: 0, y: 0, width: compositeCanvas.width, height: compositeCanvas.height / 2 };
+                fftArea = { x: 0, y: compositeCanvas.height / 2, width: compositeCanvas.width, height: compositeCanvas.height / 2 };
+            } else {
+                // Side by side layout
+                fftArea = { x: 0, y: 0, width: compositeCanvas.width / 2, height: compositeCanvas.height };
+                profileArea = { x: compositeCanvas.width / 2, y: 0, width: compositeCanvas.width / 2, height: compositeCanvas.height };
+            }
+            
+            // Draw profile section background
+            const gradient = compositeCtx.createLinearGradient(profileArea.x, profileArea.y, profileArea.x + profileArea.width, profileArea.y + profileArea.height);
+            gradient.addColorStop(0, 'rgba(26, 26, 26, 0.9)');
+            gradient.addColorStop(1, 'rgba(42, 42, 42, 0.9)');
+            compositeCtx.fillStyle = gradient;
+            compositeCtx.fillRect(profileArea.x, profileArea.y, profileArea.width, profileArea.height);
+            
+            // Draw profile picture
+            drawProfileOnComposite(profileArea);
+            
+            // Draw FFT visualization
+            drawFFTOnComposite(fftArea);
+        }
+        
+        function drawProfileOnComposite(area) {
+            const centerX = area.x + area.width / 2;
+            const centerY = area.y + area.height / 2;
+            const radius = Math.min(area.width, area.height) * 0.25;
+            
+            // Draw profile circle background
+            compositeCtx.beginPath();
+            compositeCtx.arc(centerX, centerY, radius, 0, 2 * Math.PI);
+            compositeCtx.fillStyle = 'rgba(102, 102, 102, 0.5)';
+            compositeCtx.fill();
+            compositeCtx.strokeStyle = '#ddd';
+            compositeCtx.lineWidth = 3;
+            compositeCtx.stroke();
+            
+            // Try to draw user photo if available
+            const profilePic = document.querySelector('.profile-pic img');
+            if (profilePic && profilePic.complete && profilePic.naturalHeight !== 0) {
+                compositeCtx.save();
+                compositeCtx.beginPath();
+                compositeCtx.arc(centerX, centerY, radius, 0, 2 * Math.PI);
+                compositeCtx.clip();
+                compositeCtx.drawImage(profilePic, centerX - radius, centerY - radius, radius * 2, radius * 2);
+                compositeCtx.restore();
+            } else {
+                // Draw initial letter
+                const initial = window.currentUser?.username?.charAt(0) || 'P';
+                compositeCtx.fillStyle = 'white';
+                compositeCtx.font = `${radius}px Arial`;
+                compositeCtx.textAlign = 'center';
+                compositeCtx.textBaseline = 'middle';
+                compositeCtx.fillText(initial, centerX, centerY);
+            }
+        }
+        
+        function drawFFTOnComposite(area) {
+            if (!dataArray) return;
+            
+            // Clear FFT area
+            compositeCtx.fillStyle = 'rgba(0, 0, 0, 0.5)';
+            compositeCtx.fillRect(area.x, area.y, area.width, area.height);
+            
+            let barHeight;
+            let x = area.x;
+            const barWidth = (area.width / dataArray.length) * 2.5;
+            
+            // Draw FFT bars
+            for (const value of dataArray) {
+                barHeight = (value / 255) * area.height;
+                
+                const gradient = compositeCtx.createLinearGradient(x, area.y + area.height - barHeight, x, area.y + area.height);
+                gradient.addColorStop(0, 'rgba(255, 50, 50, 0.8)');
+                gradient.addColorStop(1, 'rgba(255, 50, 50, 0.2)');
+                
+                compositeCtx.fillStyle = gradient;
+                compositeCtx.fillRect(x, area.y + area.height - barHeight, barWidth, barHeight);
+                
+                x += barWidth + 1;
+            }
+        }
+
         function draw() {
             if (!isRunning) return;
             
@@ -412,14 +534,13 @@
             
             analyser.getByteFrequencyData(dataArray);
             
-            // Make background transparent to show profile picture
+            // Draw on display canvas (for live view)
             ctx.clearRect(0, 0, canvas.width, canvas.height);
             
             let barHeight;
             let x = 0;
             const barWidth = (canvas.width / dataArray.length) * 2.5;
             
-            // Draw with a gradient effect
             for (const value of dataArray) {
                 barHeight = value / 255 * canvas.height;
                 
@@ -431,6 +552,11 @@
                 ctx.fillRect(x, canvas.height - barHeight, barWidth, barHeight);
                 
                 x += barWidth + 1;
+            }
+            
+            // Draw on composite canvas (for recording)
+            if (compositeCanvas) {
+                drawComposite();
             }
         }
 
@@ -498,6 +624,10 @@
             
             if (isRunning) {
                 createMasterWindow();
+                // Recreate composite canvas with new dimensions
+                if (compositeCanvas) {
+                    createCompositeCanvas();
+                }
             }
         }
         
@@ -511,6 +641,6 @@
     <script src="auth.js"></script>
     <script src="ad-control.js"></script>
     <script src="header-init.js"></script>
-    <script src="dist/header.js"></script>
+    <script src="dist/header.bundle.js"></script>
 </body>
 </html>

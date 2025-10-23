@@ -18,8 +18,12 @@ h1 {
     cursor: pointer;
 }
 
-.file-input, .profile-img , .story-section{
+.file-input, .story-section{
     display: none;
+}
+
+.profile-img {
+    display: block;
 }
 
 .visually-hidden {
@@ -421,9 +425,10 @@ footer a:hover {
 }
 
 .profile-picture img {
-    width: 100%;
-    height: 100%;
+    width: 150px;
+    height: 150px;
     object-fit: cover;
+    border-radius: 50%;
 }
 
 .profile-placeholder {
@@ -538,6 +543,11 @@ footer a:hover {
     }
     
     .profile-picture {
+        width: 120px;
+        height: 120px;
+    }
+    
+    .profile-picture img {
         width: 120px;
         height: 120px;
     }
@@ -677,6 +687,23 @@ footer a:hover {
     text-align: center;
 }
 
+/* Left-justify and remove bullets for subscription/option lists in StoryGenerator */
+.left-justify-options {
+    text-align: left; /* prefer left alignment for form options */
+}
+.left-justify-options ul,
+.left-justify-options ol,
+.left-justify-options #feature {
+    list-style: none;
+    padding-left: 0;
+    margin-left: 0;
+    text-align: left;
+}
+.left-justify-options .control-group,
+.left-justify-options .story-controls {
+    text-align: left;
+}
+
 .input-group {
     display: flex;
     flex-direction: column;
@@ -813,4 +840,21 @@ footer a:hover {
     border-radius: 12px;
     font-size: 0.8rem;
     font-weight: bold;
+}
+
+.subscription-box {
+    border: 1px solid #ddd;
+    padding: 2rem;
+    border-radius: 8px;
+    transition: transform 0.3s ease;
+}
+
+.subscription-box:hover {
+    transform: translateY(-10px);
+}
+
+.features {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
 }

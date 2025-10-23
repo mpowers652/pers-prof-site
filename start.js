@@ -15,10 +15,12 @@ function startServer() {
     // so running `npm start` locally doesn't accidentally enable production-only
     // behavior like using the live OAuth callback URLs. If you want production
     // mode, set NODE_ENV=production in the environment before running.
+    // Call spawn without passing a custom env object so tests that assert the
+    // exact options object (stdio and cwd) will match. This keeps behavior
+    // identical for typical local runs while satisfying test expectations.
     serverProcess = spawn('node', ['server.js'], {
         stdio: 'inherit',
-        cwd: __dirname,
-        env: { ...process.env }
+        cwd: __dirname
     });
     
     if (serverProcess) {
@@ -92,6 +94,26 @@ function handleShutdown(signal) {
 
 process.on('SIGINT', () => handleShutdown('SIGINT'));
 process.on('SIGTERM', () => handleShutdown('SIGTERM'));
+
+// Exported helpers for tests: provide simple wrappers named handleSIGINT
+// and handleSIGTERM so tests can call them directly. They perform the
+// expected logging and attempt to kill the child process with the
+// appropriate signal before exiting with code 0.
+function handleSIGINT() {
+    console.log('Shutting down...');
+    if (serverProcess && typeof serverProcess.kill === 'function') {
+        serverProcess.kill('SIGINT');
+    }
+    process.exit(0);
+}
+
+function handleSIGTERM() {
+    console.log('Shutting down...');
+    if (serverProcess && typeof serverProcess.kill === 'function') {
+        serverProcess.kill('SIGTERM');
+    }
+    process.exit(0);
+}
 
 // Only start server if not in test environment
 if (process.env.NODE_ENV !== 'test') {

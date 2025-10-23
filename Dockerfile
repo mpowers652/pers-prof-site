@@ -15,10 +15,10 @@ COPY . .
 RUN rm -f .env && \
     npm run build && \
     sed -i '/adsbygoogle/d' index.html || true && \
-    mkdir -p archives sessions && \
+    mkdir -p archives sessions components dist && \
     addgroup -g 1001 -S nodejs && \
     adduser -S nodeuser -u 1001 && \
-    chown -R nodeuser:nodejs /usr/src/app/sessions /usr/src/app/archives
+    chown -R nodeuser:nodejs /usr/src/app/sessions /usr/src/app/archives /usr/src/app/components /usr/src/app/dist
 
 ENV NODE_ENV=production
 

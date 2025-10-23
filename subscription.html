@@ -15,19 +15,21 @@
         <div style="margin: 2rem 0;">
             <h3>Subscription Plans:</h3>
             <div style="display: flex; justify-content: center; gap: 2rem; margin-top: 2rem;">
-                <div style="border: 1px solid #ddd; padding: 2rem; border-radius: 8px;">
+                <div class="subscription-box">
                     <h4>Premium</h4>
                     <p>$2.99/month</p>
-                    <p>Ad-free experience</p>
+                    <div class="features">
+                        <span>Ad-free experience</span>
+                    </div>
                 </div>
-                <div style="border: 1px solid #ddd; padding: 2rem; border-radius: 8px;">
+                <div class="subscription-box">
                     <h4>Full</h4>
                     <p>$7.99/month</p>
-                    <ul>
-                        <li class="feature">Access to Story Generator</li>
-                        <li class="feature">Ad-free experience</li>
-                        <li class="feature">Beta features</li>
-                    </ul>
+                    <div class="features">
+                        <span>Access to Story Generator</span>
+                        <span>Ad-free experience</span>
+                        <span>Beta features</span>
+                    </div>
                 </div>
             </div>
         </div>
@@ -35,6 +37,6 @@
     </main>
     
     <script src="header-init.js"></script>
-    <script src="dist/header.js"></script>
+    <script src="dist/header.bundle.js"></script>
 </body>
 </html>

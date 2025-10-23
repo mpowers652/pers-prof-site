@@ -41,7 +41,7 @@ function Header() {
       </div>
       <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
         <div style={{ position: 'relative' }} className="user-dropdown">
-          <span style={{ cursor: 'pointer', fontSize: '1rem' }}>🎭 Welcome, {displayName}!</span>
+          <a href="/profile" style={{ cursor: 'pointer', fontSize: '1rem', color: 'white', textDecoration: 'none' }}>🎭 Welcome, {displayName}!</a>
           <div style={{
             position: 'absolute',
             top: '100%',
@@ -49,10 +49,11 @@ function Header() {
             background: 'white',
             border: '1px solid #ddd',
             borderRadius: '4px',
-            minWidth: '100px',
+            minWidth: '120px',
             display: 'none',
             zIndex: 1000
           }} className="user-menu">
+            <a href="/profile" style={{ display: 'block', padding: '0.8rem 1rem', color: '#333', textDecoration: 'none' }}>Profile</a>
             <a href="/logout" style={{ display: 'block', padding: '0.8rem 1rem', color: '#333', textDecoration: 'none' }}>Log out</a>
           </div>
         </div>

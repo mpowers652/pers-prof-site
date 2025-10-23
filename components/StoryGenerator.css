@@ -4,6 +4,63 @@
     margin: 2rem 0;
     border-radius: 8px;
     border: 2px solid #007bff;
+    transition: all 0.3s ease;
+}
+
+.story-generator.resizing {
+    user-select: none;
+}
+
+.resize-handle {
+    position: absolute;
+    background: #007bff;
+    opacity: 0;
+    transition: opacity 0.2s;
+    z-index: 1000;
+}
+
+.story-generator:hover .resize-handle {
+    opacity: 0.6;
+}
+
+.resize-handle:hover {
+    opacity: 1;
+    background: #0056b3;
+}
+
+.resize-right {
+    top: 50%;
+    right: -15px;
+    width: 30px;
+    height: 30px;
+    cursor: ew-resize;
+    transform: translateY(-50%);
+    border: 1px solid #007bff;
+    border-radius: 4px;
+}
+
+.resize-bottom {
+    bottom: -15px;
+    left: 50%;
+    width: 30px;
+    height: 30px;
+    cursor: ns-resize;
+    transform: translateX(-50%);
+    border: 1px solid #007bff;
+    border-radius: 4px;
+}
+
+.resize-corner {
+    bottom: -5px;
+    right: -5px;
+    width: 15px;
+    height: 15px;
+    cursor: nw-resize;
+}
+
+.story-display {
+    margin: 1.5rem;
+    width: calc(100% - 3rem);
 }
 
 .story-generator.access-denied {
@@ -35,6 +92,12 @@
     border: 1px solid #ccc;
     border-radius: 4px;
     background: rgba(255, 255, 255, 0.9);
+}
+
+.scrollable-dropdown {
+    height: auto;
+    overflow-y: auto;
+    max-height: 120px;
 }
 
 .generate-btn {
@@ -85,5 +148,9 @@
     
     .control-group {
         min-width: auto;
+    }
+    
+    .resize-handle {
+        opacity: 0.8;
     }
 }

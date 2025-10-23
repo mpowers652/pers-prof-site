@@ -75,11 +75,18 @@ function checkAuthentication() {
 
 // Update user interface based on authentication
 function updateUserInterface() {
+    console.log('Updating UI with user:', currentUser);
+    
     const userInfo = document.getElementById('user-info');
     if (currentUser && userInfo) {
+        let headerPhotoUrl = currentUser.googlePhoto;
+        if (headerPhotoUrl && headerPhotoUrl.includes('googleusercontent.com')) {
+            headerPhotoUrl = `/proxy/image?url=${encodeURIComponent(headerPhotoUrl)}`;
+        }
+        
         userInfo.innerHTML = `
             <div style="display: flex; align-items: center; gap: 10px;">
-                ${currentUser.googlePhoto ? `<img src="${currentUser.googlePhoto}" alt="Profile" style="width: 30px; height: 30px; border-radius: 50%;">` : ''}
+                ${headerPhotoUrl ? `<img src="${headerPhotoUrl}" alt="Profile" style="width: 30px; height: 30px; border-radius: 50%;">` : ''}
                 <span>Welcome, ${currentUser.username}!</span>
                 <span class="role-badge">${currentUser.role}</span>
             </div>
@@ -93,15 +100,35 @@ function updateUserInterface() {
     
     if (profileImg && profilePlaceholder) {
         if (currentUser && (currentUser.googlePhoto || currentUser.facebookPhoto || currentUser.customPhoto)) {
-            const photoUrl = currentUser.customPhoto || currentUser.googlePhoto || currentUser.facebookPhoto;
+            let photoUrl = currentUser.customPhoto || currentUser.googlePhoto || currentUser.facebookPhoto;
+            
+            // Use proxy for Google profile images to bypass CORS
+            if (photoUrl && photoUrl.includes('googleusercontent.com')) {
+                photoUrl = `/proxy/image?url=${encodeURIComponent(photoUrl)}`;
+            }
+            
+            console.log('Setting profile image URL:', photoUrl);
             profileImg.src = photoUrl;
             profileImg.style.display = 'block';
             profilePlaceholder.style.display = 'none';
-            if (removeBtn) removeBtn.style.display = 'inline-block';
+            if (removeBtn) removeBtn.classList.remove('hidden');
+            
+            // Add error handling for image loading
+            profileImg.onerror = function() {
+                console.error('Failed to load profile image:', photoUrl);
+                profileImg.style.display = 'none';
+                profilePlaceholder.style.display = 'block';
+                profilePlaceholder.textContent = 'Failed to load profile photo';
+            };
+            
+            profileImg.onload = function() {
+                console.log('Profile image loaded successfully');
+            };
         } else {
+            console.log('No profile photo available');
             profileImg.style.display = 'none';
             profilePlaceholder.style.display = 'block';
-            if (removeBtn) removeBtn.style.display = 'none';
+            if (removeBtn) removeBtn.classList.add('hidden');
         }
     }
 }

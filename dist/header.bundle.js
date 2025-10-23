@@ -12,448 +12,6 @@ return /******/ (() => { // webpackBootstrap
 /******/ 	"use strict";
 /******/ 	var __webpack_modules__ = ({
 
-/***/ "./components/StoryGenerator.jsx":
-/*!***************************************!*\
-  !*** ./components/StoryGenerator.jsx ***!
-  \***************************************/
-/***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
-
-__webpack_require__.r(__webpack_exports__);
-/* harmony export */ __webpack_require__.d(__webpack_exports__, {
-/* harmony export */   "default": () => (__WEBPACK_DEFAULT_EXPORT__)
-/* harmony export */ });
-/* harmony import */ var react__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! react */ "./node_modules/react/index.js");
-/* harmony import */ var react__WEBPACK_IMPORTED_MODULE_0___default = /*#__PURE__*/__webpack_require__.n(react__WEBPACK_IMPORTED_MODULE_0__);
-function _typeof(o) { "@babel/helpers - typeof"; return _typeof = "function" == typeof Symbol && "symbol" == typeof Symbol.iterator ? function (o) { return typeof o; } : function (o) { return o && "function" == typeof Symbol && o.constructor === Symbol && o !== Symbol.prototype ? "symbol" : typeof o; }, _typeof(o); }
-function ownKeys(e, r) { var t = Object.keys(e); if (Object.getOwnPropertySymbols) { var o = Object.getOwnPropertySymbols(e); r && (o = o.filter(function (r) { return Object.getOwnPropertyDescriptor(e, r).enumerable; })), t.push.apply(t, o); } return t; }
-function _objectSpread(e) { for (var r = 1; r < arguments.length; r++) { var t = null != arguments[r] ? arguments[r] : {}; r % 2 ? ownKeys(Object(t), !0).forEach(function (r) { _defineProperty(e, r, t[r]); }) : Object.getOwnPropertyDescriptors ? Object.defineProperties(e, Object.getOwnPropertyDescriptors(t)) : ownKeys(Object(t)).forEach(function (r) { Object.defineProperty(e, r, Object.getOwnPropertyDescriptor(t, r)); }); } return e; }
-function _defineProperty(e, r, t) { return (r = _toPropertyKey(r)) in e ? Object.defineProperty(e, r, { value: t, enumerable: !0, configurable: !0, writable: !0 }) : e[r] = t, e; }
-function _toPropertyKey(t) { var i = _toPrimitive(t, "string"); return "symbol" == _typeof(i) ? i : i + ""; }
-function _toPrimitive(t, r) { if ("object" != _typeof(t) || !t) return t; var e = t[Symbol.toPrimitive]; if (void 0 !== e) { var i = e.call(t, r || "default"); if ("object" != _typeof(i)) return i; throw new TypeError("@@toPrimitive must return a primitive value."); } return ("string" === r ? String : Number)(t); }
-function _regenerator() { /*! regenerator-runtime -- Copyright (c) 2014-present, Facebook, Inc. -- license (MIT): https://github.com/babel/babel/blob/main/packages/babel-helpers/LICENSE */ var e, t, r = "function" == typeof Symbol ? Symbol : {}, n = r.iterator || "@@iterator", o = r.toStringTag || "@@toStringTag"; function i(r, n, o, i) { var c = n && n.prototype instanceof Generator ? n : Generator, u = Object.create(c.prototype); return _regeneratorDefine2(u, "_invoke", function (r, n, o) { var i, c, u, f = 0, p = o || [], y = !1, G = { p: 0, n: 0, v: e, a: d, f: d.bind(e, 4), d: function d(t, r) { return i = t, c = 0, u = e, G.n = r, a; } }; function d(r, n) { for (c = r, u = n, t = 0; !y && f && !o && t < p.length; t++) { var o, i = p[t], d = G.p, l = i[2]; r > 3 ? (o = l === n) && (u = i[(c = i[4]) ? 5 : (c = 3, 3)], i[4] = i[5] = e) : i[0] <= d && ((o = r < 2 && d < i[1]) ? (c = 0, G.v = n, G.n = i[1]) : d < l && (o = r < 3 || i[0] > n || n > l) && (i[4] = r, i[5] = n, G.n = l, c = 0)); } if (o || r > 1) return a; throw y = !0, n; } return function (o, p, l) { if (f > 1) throw TypeError("Generator is already running"); for (y && 1 === p && d(p, l), c = p, u = l; (t = c < 2 ? e : u) || !y;) { i || (c ? c < 3 ? (c > 1 && (G.n = -1), d(c, u)) : G.n = u : G.v = u); try { if (f = 2, i) { if (c || (o = "next"), t = i[o]) { if (!(t = t.call(i, u))) throw TypeError("iterator result is not an object"); if (!t.done) return t; u = t.value, c < 2 && (c = 0); } else 1 === c && (t = i["return"]) && t.call(i), c < 2 && (u = TypeError("The iterator does not provide a '" + o + "' method"), c = 1); i = e; } else if ((t = (y = G.n < 0) ? u : r.call(n, G)) !== a) break; } catch (t) { i = e, c = 1, u = t; } finally { f = 1; } } return { value: t, done: y }; }; }(r, o, i), !0), u; } var a = {}; function Generator() {} function GeneratorFunction() {} function GeneratorFunctionPrototype() {} t = Object.getPrototypeOf; var c = [][n] ? t(t([][n]())) : (_regeneratorDefine2(t = {}, n, function () { return this; }), t), u = GeneratorFunctionPrototype.prototype = Generator.prototype = Object.create(c); function f(e) { return Object.setPrototypeOf ? Object.setPrototypeOf(e, GeneratorFunctionPrototype) : (e.__proto__ = GeneratorFunctionPrototype, _regeneratorDefine2(e, o, "GeneratorFunction")), e.prototype = Object.create(u), e; } return GeneratorFunction.prototype = GeneratorFunctionPrototype, _regeneratorDefine2(u, "constructor", GeneratorFunctionPrototype), _regeneratorDefine2(GeneratorFunctionPrototype, "constructor", GeneratorFunction), GeneratorFunction.displayName = "GeneratorFunction", _regeneratorDefine2(GeneratorFunctionPrototype, o, "GeneratorFunction"), _regeneratorDefine2(u), _regeneratorDefine2(u, o, "Generator"), _regeneratorDefine2(u, n, function () { return this; }), _regeneratorDefine2(u, "toString", function () { return "[object Generator]"; }), (_regenerator = function _regenerator() { return { w: i, m: f }; })(); }
-function _regeneratorDefine2(e, r, n, t) { var i = Object.defineProperty; try { i({}, "", {}); } catch (e) { i = 0; } _regeneratorDefine2 = function _regeneratorDefine(e, r, n, t) { function o(r, n) { _regeneratorDefine2(e, r, function (e) { return this._invoke(r, n, e); }); } r ? i ? i(e, r, { value: n, enumerable: !t, configurable: !t, writable: !t }) : e[r] = n : (o("next", 0), o("throw", 1), o("return", 2)); }, _regeneratorDefine2(e, r, n, t); }
-function asyncGeneratorStep(n, t, e, r, o, a, c) { try { var i = n[a](c), u = i.value; } catch (n) { return void e(n); } i.done ? t(u) : Promise.resolve(u).then(r, o); }
-function _asyncToGenerator(n) { return function () { var t = this, e = arguments; return new Promise(function (r, o) { var a = n.apply(t, e); function _next(n) { asyncGeneratorStep(a, r, o, _next, _throw, "next", n); } function _throw(n) { asyncGeneratorStep(a, r, o, _next, _throw, "throw", n); } _next(void 0); }); }; }
-function _slicedToArray(r, e) { return _arrayWithHoles(r) || _iterableToArrayLimit(r, e) || _unsupportedIterableToArray(r, e) || _nonIterableRest(); }
-function _nonIterableRest() { throw new TypeError("Invalid attempt to destructure non-iterable instance.\nIn order to be iterable, non-array objects must have a [Symbol.iterator]() method."); }
-function _unsupportedIterableToArray(r, a) { if (r) { if ("string" == typeof r) return _arrayLikeToArray(r, a); var t = {}.toString.call(r).slice(8, -1); return "Object" === t && r.constructor && (t = r.constructor.name), "Map" === t || "Set" === t ? Array.from(r) : "Arguments" === t || /^(?:Ui|I)nt(?:8|16|32)(?:Clamped)?Array$/.test(t) ? _arrayLikeToArray(r, a) : void 0; } }
-function _arrayLikeToArray(r, a) { (null == a || a > r.length) && (a = r.length); for (var e = 0, n = Array(a); e < a; e++) n[e] = r[e]; return n; }
-function _iterableToArrayLimit(r, l) { var t = null == r ? null : "undefined" != typeof Symbol && r[Symbol.iterator] || r["@@iterator"]; if (null != t) { var e, n, i, u, a = [], f = !0, o = !1; try { if (i = (t = t.call(r)).next, 0 === l) { if (Object(t) !== t) return; f = !1; } else for (; !(f = (e = i.call(t)).done) && (a.push(e.value), a.length !== l); f = !0); } catch (r) { o = !0, n = r; } finally { try { if (!f && null != t["return"] && (u = t["return"](), Object(u) !== u)) return; } finally { if (o) throw n; } } return a; } }
-function _arrayWithHoles(r) { if (Array.isArray(r)) return r; }
-
-var StoryGenerator = function StoryGenerator(_ref) {
-  var _subjects$adjective;
-  var _ref$user = _ref.user,
-    initialUser = _ref$user === void 0 ? null : _ref$user,
-    _ref$className = _ref.className,
-    className = _ref$className === void 0 ? '' : _ref$className,
-    _ref$style = _ref.style,
-    style = _ref$style === void 0 ? {} : _ref$style,
-    _ref$showTitle = _ref.showTitle,
-    showTitle = _ref$showTitle === void 0 ? true : _ref$showTitle,
-    _ref$compact = _ref.compact,
-    compact = _ref$compact === void 0 ? false : _ref$compact;
-  var _useState = (0,react__WEBPACK_IMPORTED_MODULE_0__.useState)(initialUser),
-    _useState2 = _slicedToArray(_useState, 2),
-    user = _useState2[0],
-    setUser = _useState2[1];
-  var _useState3 = (0,react__WEBPACK_IMPORTED_MODULE_0__.useState)(!initialUser),
-    _useState4 = _slicedToArray(_useState3, 2),
-    userLoading = _useState4[0],
-    setUserLoading = _useState4[1];
-  var _useState5 = (0,react__WEBPACK_IMPORTED_MODULE_0__.useState)(''),
-    _useState6 = _slicedToArray(_useState5, 2),
-    adjective = _useState6[0],
-    setAdjective = _useState6[1];
-  var _useState7 = (0,react__WEBPACK_IMPORTED_MODULE_0__.useState)(''),
-    _useState8 = _slicedToArray(_useState7, 2),
-    customAdjective = _useState8[0],
-    setCustomAdjective = _useState8[1];
-  var _useState9 = (0,react__WEBPACK_IMPORTED_MODULE_0__.useState)(''),
-    _useState0 = _slicedToArray(_useState9, 2),
-    wordCount = _useState0[0],
-    setWordCount = _useState0[1];
-  var _useState1 = (0,react__WEBPACK_IMPORTED_MODULE_0__.useState)(''),
-    _useState10 = _slicedToArray(_useState1, 2),
-    customWordCount = _useState10[0],
-    setCustomWordCount = _useState10[1];
-  var _useState11 = (0,react__WEBPACK_IMPORTED_MODULE_0__.useState)(''),
-    _useState12 = _slicedToArray(_useState11, 2),
-    subject = _useState12[0],
-    setSubject = _useState12[1];
-  var _useState13 = (0,react__WEBPACK_IMPORTED_MODULE_0__.useState)(''),
-    _useState14 = _slicedToArray(_useState13, 2),
-    customSubject = _useState14[0],
-    setCustomSubject = _useState14[1];
-  var _useState15 = (0,react__WEBPACK_IMPORTED_MODULE_0__.useState)(''),
-    _useState16 = _slicedToArray(_useState15, 2),
-    story = _useState16[0],
-    setStory = _useState16[1];
-  var _useState17 = (0,react__WEBPACK_IMPORTED_MODULE_0__.useState)(false),
-    _useState18 = _slicedToArray(_useState17, 2),
-    loading = _useState18[0],
-    setLoading = _useState18[1];
-  var _useState19 = (0,react__WEBPACK_IMPORTED_MODULE_0__.useState)(''),
-    _useState20 = _slicedToArray(_useState19, 2),
-    error = _useState20[0],
-    setError = _useState20[1];
-  var _useState21 = (0,react__WEBPACK_IMPORTED_MODULE_0__.useState)({
-      width: 600,
-      height: 400
-    }),
-    _useState22 = _slicedToArray(_useState21, 2),
-    dimensions = _useState22[0],
-    setDimensions = _useState22[1];
-  var _useState23 = (0,react__WEBPACK_IMPORTED_MODULE_0__.useState)(false),
-    _useState24 = _slicedToArray(_useState23, 2),
-    isResizing = _useState24[0],
-    setIsResizing = _useState24[1];
-  var wordCounts = ['200', '500', '1000', '1500', '2000', '2500', '3000', '4000', '5000', '7000', '8000', '10000'];
-  var subjects = {
-    funny: ['clown', 'banana', 'robot', 'penguin'],
-    sweet: ['puppies', 'kitties', 'chickens', 'a random farm animal'],
-    scary: ['unaired TV episodes', 'unaired movies', 'unaired audio', 'missing mascots and characters from shows and movies coming to life and becoming hostile', 'TV or movie characters become real and hostile', 'urban legends', 'haunted technology', 'psychological issues such as dementia, schizophrenia or mania', 'supernatural entities, otherworldly in nature', 'cryptids', 'werewolves', 'mothman', 'skinwalkers', 'murderous cannibal neighbors', 'zombies', 'loch ness monster', 'the Rake', 'a random mythological creature come to life', 'alternate reality', 'an SCP entity or the foundation itself', 'creepypasta creatures or personas', 'possessed animals', 'cursed creature areas', 'imaginary friend becomes evil', 'time loop', 'Eyeless Jack', 'a haunted area', 'ghosts', 'leviathans similar to those shown in the Supernatural series', 'vampires', 'malicious local inhabitants', 'lost and found alien technology'],
-    bedtime: ['moon', 'star', 'dream', 'pillow']
-  };
-
-  // Check user status on component mount
-  (0,react__WEBPACK_IMPORTED_MODULE_0__.useEffect)(function () {
-    var checkUserStatus = /*#__PURE__*/function () {
-      var _ref2 = _asyncToGenerator(/*#__PURE__*/_regenerator().m(function _callee() {
-        var response, data, userData, _t;
-        return _regenerator().w(function (_context) {
-          while (1) switch (_context.p = _context.n) {
-            case 0:
-              if (!initialUser) {
-                _context.n = 1;
-                break;
-              }
-              setUser(initialUser);
-              setUserLoading(false);
-              return _context.a(2);
-            case 1:
-              if (!window.currentUser) {
-                _context.n = 2;
-                break;
-              }
-              setUser(window.currentUser);
-              setUserLoading(false);
-              return _context.a(2);
-            case 2:
-              _context.p = 2;
-              _context.n = 3;
-              return fetch('/auth/verify', {
-                credentials: 'include',
-                headers: {
-                  'Content-Type': 'application/json'
-                }
-              });
-            case 3:
-              response = _context.v;
-              if (!response.ok) {
-                _context.n = 5;
-                break;
-              }
-              _context.n = 4;
-              return response.json();
-            case 4:
-              data = _context.v;
-              userData = data.user || data;
-              setUser(userData);
-              window.currentUser = userData;
-              _context.n = 6;
-              break;
-            case 5:
-              console.log('StoryGenerator: User not authenticated');
-              setUser(null);
-            case 6:
-              _context.n = 8;
-              break;
-            case 7:
-              _context.p = 7;
-              _t = _context.v;
-              console.error('StoryGenerator: Auth verification failed:', _t);
-              setUser(null);
-            case 8:
-              _context.p = 8;
-              setUserLoading(false);
-              return _context.f(8);
-            case 9:
-              return _context.a(2);
-          }
-        }, _callee, null, [[2, 7, 8, 9]]);
-      }));
-      return function checkUserStatus() {
-        return _ref2.apply(this, arguments);
-      };
-    }();
-    checkUserStatus();
-  }, [initialUser]);
-
-  // Listen for auth updates
-  (0,react__WEBPACK_IMPORTED_MODULE_0__.useEffect)(function () {
-    var handleAuthUpdate = function handleAuthUpdate(event) {
-      if (event.detail && event.detail.user) {
-        setUser(event.detail.user);
-      } else if (window.currentUser) {
-        setUser(window.currentUser);
-      }
-    };
-    window.addEventListener('auth:updated', handleAuthUpdate);
-    return function () {
-      return window.removeEventListener('auth:updated', handleAuthUpdate);
-    };
-  }, []);
-  var hasAccess = user && (user.subscription === 'full' || user.role === 'admin');
-  var handleAdjectiveChange = function handleAdjectiveChange(value) {
-    setAdjective(value);
-    setSubject(''); // Reset subject when adjective changes
-  };
-  var getFormValues = function getFormValues() {
-    return {
-      adjective: adjective === 'custom' ? customAdjective : adjective,
-      wordCount: wordCount === 'custom' ? customWordCount : wordCount,
-      subject: subject === 'custom' ? customSubject : subject
-    };
-  };
-  var generateStory = /*#__PURE__*/function () {
-    var _ref3 = _asyncToGenerator(/*#__PURE__*/_regenerator().m(function _callee2() {
-      var values, response, data, _t2;
-      return _regenerator().w(function (_context2) {
-        while (1) switch (_context2.p = _context2.n) {
-          case 0:
-            values = getFormValues();
-            if (!(!values.adjective || !values.wordCount || !values.subject)) {
-              _context2.n = 1;
-              break;
-            }
-            setError('Please fill in all fields');
-            return _context2.a(2);
-          case 1:
-            if (hasAccess) {
-              _context2.n = 2;
-              break;
-            }
-            setError('Story Generator requires a full subscription');
-            return _context2.a(2);
-          case 2:
-            setLoading(true);
-            setError('');
-            _context2.p = 3;
-            _context2.n = 4;
-            return fetch('/story/generate', {
-              method: 'POST',
-              headers: {
-                'Content-Type': 'application/json'
-              },
-              body: JSON.stringify(values),
-              credentials: 'include'
-            });
-          case 4:
-            response = _context2.v;
-            _context2.n = 5;
-            return response.json();
-          case 5:
-            data = _context2.v;
-            if (data.error) {
-              setError(data.error);
-            } else {
-              setStory(data.story);
-            }
-            _context2.n = 7;
-            break;
-          case 6:
-            _context2.p = 6;
-            _t2 = _context2.v;
-            console.error('Story generation error:', _t2);
-            setError('Failed to generate story. Please try again.');
-          case 7:
-            _context2.p = 7;
-            setLoading(false);
-            return _context2.f(7);
-          case 8:
-            return _context2.a(2);
-        }
-      }, _callee2, null, [[3, 6, 7, 8]]);
-    }));
-    return function generateStory() {
-      return _ref3.apply(this, arguments);
-    };
-  }();
-  if (userLoading) {
-    return /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement("div", {
-      className: "story-generator loading ".concat(className),
-      style: style
-    }, showTitle && /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement("h3", null, "\uD83D\uDCDA Story Generator"), /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement("p", null, "Checking access..."));
-  }
-  if (!user) {
-    return /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement("div", {
-      className: "story-generator access-denied ".concat(className),
-      style: style
-    }, showTitle && /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement("h3", null, "\uD83D\uDD12 Story Generator"), /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement("p", null, "Please log in to access the Story Generator."), /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement("a", {
-      href: "/login",
-      className: "btn"
-    }, "Log In"));
-  }
-  if (!hasAccess) {
-    return /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement("div", {
-      className: "story-generator access-denied ".concat(className),
-      style: style
-    }, showTitle && /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement("h3", null, "\uD83D\uDD12 Story Generator"), /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement("p", null, "This feature requires a full subscription."), /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement("p", null, "Current subscription: ", user.subscription || 'basic'), /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement("a", {
-      href: "/subscription",
-      className: "btn"
-    }, "Upgrade Now"));
-  }
-  var handleMouseDown = function handleMouseDown(direction) {
-    return function (e) {
-      e.preventDefault();
-      setIsResizing(true);
-      var startX = e.clientX;
-      var startY = e.clientY;
-      var startWidth = dimensions.width;
-      var startHeight = dimensions.height;
-      var handleMouseMove = function handleMouseMove(e) {
-        var deltaX = e.clientX - startX;
-        var deltaY = e.clientY - startY;
-        setDimensions(function (prev) {
-          var newWidth = prev.width;
-          var newHeight = prev.height;
-          if (direction === 'right') {
-            newWidth = Math.min(window.innerWidth - 40, Math.max(300, startWidth + deltaX));
-            document.querySelector('.story-generator').style.width = "".concat(newWidth, "px");
-          }
-          if (direction === 'bottom') {
-            newHeight = Math.max(200, startHeight + deltaY);
-          }
-          return {
-            width: newWidth,
-            height: newHeight
-          };
-        });
-      };
-      var _handleMouseUp = function handleMouseUp() {
-        setIsResizing(false);
-        document.removeEventListener('mousemove', handleMouseMove);
-        document.removeEventListener('mouseup', _handleMouseUp);
-      };
-      document.addEventListener('mousemove', handleMouseMove);
-      document.addEventListener('mouseup', _handleMouseUp);
-    };
-  };
-  return /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement("div", {
-    className: "story-generator left-justify-options ".concat(className, " ").concat(isResizing ? 'resizing' : ''),
-    style: _objectSpread(_objectSpread({}, style), {}, {
-      width: "".concat(dimensions.width, "px"),
-      minHeight: "".concat(dimensions.height, "px"),
-      position: 'relative',
-      overflow: 'visible',
-      maxWidth: 'none'
-    })
-  }, showTitle && /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement("h3", null, "\uD83D\uDCDA Story Generator"), /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement("div", {
-    className: "story-controls ".concat(compact ? 'compact' : '')
-  }, /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement("div", {
-    className: "control-group"
-  }, /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement("select", {
-    value: adjective,
-    onChange: function onChange(e) {
-      return handleAdjectiveChange(e.target.value);
-    },
-    title: "adjective"
-  }, /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement("option", {
-    value: ""
-  }, "Select adjective..."), /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement("option", {
-    value: "funny"
-  }, "Funny"), /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement("option", {
-    value: "sweet"
-  }, "Sweet"), /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement("option", {
-    value: "scary"
-  }, "Scary"), /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement("option", {
-    value: "bedtime"
-  }, "Bedtime"), /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement("option", {
-    value: "custom"
-  }, "Custom...")), adjective === 'custom' && /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement("input", {
-    type: "text",
-    value: customAdjective,
-    onChange: function onChange(e) {
-      return setCustomAdjective(e.target.value);
-    },
-    placeholder: "Enter custom adjective"
-  })), /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement("div", {
-    className: "control-group"
-  }, /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement("select", {
-    value: wordCount,
-    onChange: function onChange(e) {
-      return setWordCount(e.target.value);
-    },
-    title: "wordCount",
-    size: "4",
-    className: "scrollable-dropdown"
-  }, /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement("option", {
-    value: ""
-  }, "Select word count..."), wordCounts.map(function (count) {
-    return /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement("option", {
-      key: count,
-      value: count
-    }, count);
-  }), /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement("option", {
-    value: "custom"
-  }, "Custom...")), wordCount === 'custom' && /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement("input", {
-    type: "number",
-    value: customWordCount,
-    onChange: function onChange(e) {
-      return setCustomWordCount(e.target.value);
-    },
-    placeholder: "Enter word count"
-  })), /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement("div", {
-    className: "control-group"
-  }, /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement("select", {
-    value: subject,
-    onChange: function onChange(e) {
-      return setSubject(e.target.value);
-    },
-    title: "subject",
-    size: "4",
-    className: "scrollable-dropdown"
-  }, /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement("option", {
-    value: ""
-  }, "Select subject..."), (_subjects$adjective = subjects[adjective]) === null || _subjects$adjective === void 0 ? void 0 : _subjects$adjective.map(function (subj) {
-    return /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement("option", {
-      key: subj,
-      value: subj
-    }, subj);
-  }), /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement("option", {
-    value: "custom"
-  }, "Custom...")), subject === 'custom' && /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement("input", {
-    type: "text",
-    value: customSubject,
-    onChange: function onChange(e) {
-      return setCustomSubject(e.target.value);
-    },
-    placeholder: "Enter custom subject"
-  })), /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement("button", {
-    onClick: generateStory,
-    disabled: loading,
-    className: "btn generate-btn"
-  }, loading ? 'Generating...' : 'Generate Story')), error && /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement("div", {
-    className: "error-message"
-  }, error), story && /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement("div", {
-    className: "story-display"
-  }, /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement("h4", null, "Your Story:"), /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement("div", {
-    className: "story-text"
-  }, story)), /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement("button", {
-    className: "resize-handle resize-right",
-    onMouseDown: handleMouseDown('right'),
-    "aria-label": "Drag to resize width"
-  }), /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement("button", {
-    className: "resize-handle resize-bottom",
-    onMouseDown: handleMouseDown('bottom'),
-    "aria-label": "Drag to resize height"
-  }));
-};
-/* harmony default export */ const __WEBPACK_DEFAULT_EXPORT__ = (StoryGenerator);
-
-/***/ }),
-
 /***/ "./node_modules/react-dom/cjs/react-dom.development.js":
 /*!*************************************************************!*\
   !*** ./node_modules/react-dom/cjs/react-dom.development.js ***!
@@ -33879,6 +33437,173 @@ if (false) // removed by dead control flow
 }
 
 
+/***/ }),
+
+/***/ "./src/Header.jsx":
+/*!************************!*\
+  !*** ./src/Header.jsx ***!
+  \************************/
+/***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
+
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   "default": () => (__WEBPACK_DEFAULT_EXPORT__)
+/* harmony export */ });
+/* harmony import */ var react__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! react */ "./node_modules/react/index.js");
+/* harmony import */ var react__WEBPACK_IMPORTED_MODULE_0___default = /*#__PURE__*/__webpack_require__.n(react__WEBPACK_IMPORTED_MODULE_0__);
+
+function Header() {
+  var _user$email;
+  var user = window.currentUser || {
+    username: 'Guest',
+    role: 'user'
+  };
+  var displayName = user.username || user.displayName || ((_user$email = user.email) === null || _user$email === void 0 ? void 0 : _user$email.split('@')[0]) || 'User';
+  return /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement("header", {
+    style: {
+      background: 'linear-gradient(90deg, #8B4513 0%, #A0522D 50%, #CD853F 100%)',
+      color: 'white',
+      padding: '0.8rem 2rem',
+      display: 'flex',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+      height: '60px',
+      boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
+    }
+  }, /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement("div", {
+    style: {
+      display: 'flex',
+      alignItems: 'center',
+      gap: '2rem'
+    }
+  }, /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement("h1", {
+    style: {
+      margin: 0,
+      fontSize: '1.4rem',
+      fontWeight: 'normal'
+    }
+  }, /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement("a", {
+    href: "/",
+    style: {
+      color: 'white',
+      textDecoration: 'none'
+    }
+  }, "Matt Powers - Services Hub")), /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement("div", {
+    style: {
+      position: 'relative'
+    },
+    className: "dropdown"
+  }, /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement("span", {
+    style: {
+      cursor: 'pointer',
+      padding: '0.5rem'
+    }
+  }, "Services \u25BC"), /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement("div", {
+    style: {
+      position: 'absolute',
+      top: '100%',
+      left: 0,
+      background: 'white',
+      border: '1px solid #ddd',
+      borderRadius: '4px',
+      minWidth: '150px',
+      display: 'none',
+      zIndex: 1000
+    },
+    className: "dropdown-menu"
+  }, /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement("a", {
+    href: "/math",
+    style: {
+      display: 'block',
+      padding: '0.8rem 1rem',
+      color: '#333',
+      textDecoration: 'none'
+    }
+  }, "Math Calculator"), /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement("a", {
+    href: "/fft-visualizer",
+    style: {
+      display: 'block',
+      padding: '0.8rem 1rem',
+      color: '#333',
+      textDecoration: 'none'
+    }
+  }, "FFT Visualizer"), /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement("a", {
+    href: "/story-generator",
+    style: {
+      display: 'block',
+      padding: '0.8rem 1rem',
+      color: '#333',
+      textDecoration: 'none'
+    }
+  }, "Story Generator"), /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement("a", {
+    href: "/contact",
+    style: {
+      display: 'block',
+      padding: '0.8rem 1rem',
+      color: '#333',
+      textDecoration: 'none'
+    }
+  }, "Contact")))), /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement("div", {
+    style: {
+      display: 'flex',
+      alignItems: 'center',
+      gap: '8px'
+    }
+  }, /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement("div", {
+    style: {
+      position: 'relative'
+    },
+    className: "user-dropdown"
+  }, /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement("a", {
+    href: "/profile",
+    style: {
+      cursor: 'pointer',
+      fontSize: '1rem',
+      color: 'white',
+      textDecoration: 'none'
+    }
+  }, "\uD83C\uDFAD Welcome, ", displayName, "!"), /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement("div", {
+    style: {
+      position: 'absolute',
+      top: '100%',
+      right: 0,
+      background: 'white',
+      border: '1px solid #ddd',
+      borderRadius: '4px',
+      minWidth: '120px',
+      display: 'none',
+      zIndex: 1000
+    },
+    className: "user-menu"
+  }, /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement("a", {
+    href: "/profile",
+    style: {
+      display: 'block',
+      padding: '0.8rem 1rem',
+      color: '#333',
+      textDecoration: 'none'
+    }
+  }, "Profile"), /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement("a", {
+    href: "/logout",
+    style: {
+      display: 'block',
+      padding: '0.8rem 1rem',
+      color: '#333',
+      textDecoration: 'none'
+    }
+  }, "Log out"))), /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement("span", {
+    style: {
+      background: user.role === 'admin' ? '#4CAF50' : '#2196F3',
+      color: 'white',
+      padding: '0.25rem 0.5rem',
+      borderRadius: '4px',
+      fontSize: '0.75rem',
+      fontWeight: 'bold'
+    }
+  }, user.role.toUpperCase())), /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement("style", null, "\n        .dropdown:hover .dropdown-menu {\n          display: block !important;\n        }\n        .dropdown-menu a:hover {\n          background: #f5f5f5;\n        }\n        .user-dropdown:hover .user-menu {\n          display: block !important;\n        }\n        .user-menu a:hover {\n          background: #f5f5f5;\n        }\n      "));
+}
+/* harmony default export */ const __WEBPACK_DEFAULT_EXPORT__ = (Header);
+
 /***/ })
 
 /******/ 	});
@@ -33964,79 +33689,28 @@ if (false) // removed by dead control flow
 var __webpack_exports__ = {};
 // This entry needs to be wrapped in an IIFE because it needs to be isolated against other modules in the chunk.
 (() => {
-/*!***********************************************!*\
-  !*** ./components/story-generator-wrapper.js ***!
-  \***********************************************/
+/*!*******************************!*\
+  !*** ./src/header-wrapper.js ***!
+  \*******************************/
 __webpack_require__.r(__webpack_exports__);
-/* harmony export */ __webpack_require__.d(__webpack_exports__, {
-/* harmony export */   mountStoryGenerator: () => (/* binding */ mountStoryGenerator),
-/* harmony export */   updateStoryGeneratorUser: () => (/* binding */ updateStoryGeneratorUser)
-/* harmony export */ });
 /* harmony import */ var react__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! react */ "./node_modules/react/index.js");
 /* harmony import */ var react__WEBPACK_IMPORTED_MODULE_0___default = /*#__PURE__*/__webpack_require__.n(react__WEBPACK_IMPORTED_MODULE_0__);
 /* harmony import */ var react_dom_client__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! react-dom/client */ "./node_modules/react-dom/client.js");
-/* harmony import */ var _StoryGenerator_jsx__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! ./StoryGenerator.jsx */ "./components/StoryGenerator.jsx");
-// Wrapper to mount React StoryGenerator component in vanilla HTML pages
+/* harmony import */ var _Header_jsx__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! ./Header.jsx */ "./src/Header.jsx");
 
 
 
-
-// Function to mount StoryGenerator in any container
-function mountStoryGenerator(containerId) {
-  var props = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : {};
-  var container = document.getElementById(containerId);
-  if (!container) {
-    console.error("Container with id \"".concat(containerId, "\" not found"));
-    return;
-  }
-  var root = react_dom_client__WEBPACK_IMPORTED_MODULE_1__.createRoot(container);
-  root.render(/*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement(_StoryGenerator_jsx__WEBPACK_IMPORTED_MODULE_2__["default"], props));
-  return root;
-}
-
-// Function to update user in mounted components
-function updateStoryGeneratorUser(user) {
-  // Dispatch custom event for components to listen to
-  window.dispatchEvent(new CustomEvent('auth:updated', {
-    detail: {
-      user: user
-    }
-  }));
-}
-
-// Auto-mount if container exists on page load
 document.addEventListener('DOMContentLoaded', function () {
-  var container = document.getElementById('story-generator-mount');
-  if (container) {
-    var root = mountStoryGenerator('story-generator-mount', {
-      user: window.currentUser,
-      showTitle: true
-    });
-
-    // Re-render when user authentication changes
-    var handleAuthUpdate = function handleAuthUpdate() {
-      if (root && container) {
-        root.render(/*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement(_StoryGenerator_jsx__WEBPACK_IMPORTED_MODULE_2__["default"], {
-          user: window.currentUser,
-          showTitle: true
-        }));
-      }
-    };
-    window.addEventListener('auth:updated', handleAuthUpdate);
-    window.addEventListener('storage', function (e) {
-      if (e.key === 'token' || e.key === 'userType') {
-        handleAuthUpdate();
-      }
-    });
+  var headerRoot = document.getElementById('header-root');
+  if (headerRoot) {
+    var root = react_dom_client__WEBPACK_IMPORTED_MODULE_1__.createRoot(headerRoot);
+    root.render(/*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement(_Header_jsx__WEBPACK_IMPORTED_MODULE_2__["default"]));
   }
 });
-
-// Export for manual mounting
-window.mountStoryGenerator = mountStoryGenerator;
 })();
 
 /******/ 	return __webpack_exports__;
 /******/ })()
 ;
 });
-//# sourceMappingURL=story-generator.bundle.js.map
+//# sourceMappingURL=header.bundle.js.map
