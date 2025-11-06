@@ -780,6 +780,12 @@ app.post('/auth/login', express.json(), async (req, res) => {
     }
     console.log('Login successful for:', username);
     
+    // Reset AI credits to 1000 for admin users
+    if (user.role === 'admin') {
+        user.aiCredits = 1000;
+        console.log('Admin AI credits reset to 1000');
+    }
+    
     const token = jwt.sign({ id: user.id, iat: Math.floor(Date.now() / 1000) }, 'secret', { expiresIn: '1h' });
     console.log('Login successful for:', username, 'token generated');
     
@@ -815,6 +821,13 @@ app.get('/auth/google/callback', (req, res, next) => {
         }
         
         console.log('OAuth user object:', { id: req.user.id, username: req.user.username, email: req.user.email, role: req.user.role });
+        
+        // Reset AI credits to 1000 for admin users
+        if (req.user.role === 'admin') {
+            req.user.aiCredits = 1000;
+            console.log('Admin AI credits reset to 1000');
+        }
+        
         const token = jwt.sign({ id: req.user.id, iat: Math.floor(Date.now() / 1000) }, 'secret', { expiresIn: '1h' });
         console.log('Google OAuth success, token generated for user ID:', req.user.id);
         // Set token as httpOnly cookie
@@ -1200,6 +1213,10 @@ app.get('/admin-login', (req, res) => {
     if (!adminUser) {
         return res.status(404).send('Admin user not found');
     }
+    
+    // Reset AI credits to 1000 for admin
+    adminUser.aiCredits = 1000;
+    console.log('Admin AI credits reset to 1000');
     
     const token = jwt.sign({ id: adminUser.id, iat: Math.floor(Date.now() / 1000) }, 'secret', { expiresIn: '1h' });
     console.log('Admin quick login, token generated:', token.substring(0, 20) + '...');
