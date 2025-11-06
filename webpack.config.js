@@ -3,7 +3,8 @@ const path = require('path');
 module.exports = {
     entry: {
         'story-generator': './components/story-generator-wrapper.js',
-        'header': './src/header-wrapper.js'
+        'header': './src/header-wrapper.js',
+        'footer': './src/footer-wrapper.js'
     },
     output: {
         path: path.resolve(__dirname, 'dist'),

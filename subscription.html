@@ -9,18 +9,19 @@
 <body>
     <div id="header-root"></div>
     
-    <main style="text-align: center; padding: 3rem;">
+    <main class="subscription-page">
         <h1>Premium Subscription Required</h1>
         <p>This feature requires a premium subscription to access.</p>
-        <div style="margin: 2rem 0;">
+        <div class="subscription-section">
             <h3>Subscription Plans:</h3>
-            <div style="display: flex; justify-content: center; gap: 2rem; margin-top: 2rem;">
+            <div class="subscription-grid">
                 <div class="subscription-box">
                     <h4>Premium</h4>
                     <p>$2.99/month</p>
                     <div class="features">
                         <span>Ad-free experience</span>
                     </div>
+                    <button onclick="handleSubscription('premium')" class="btn">Subscribe</button>
                 </div>
                 <div class="subscription-box">
                     <h4>Full</h4>
@@ -29,14 +30,108 @@
                         <span>Access to Story Generator</span>
                         <span>Ad-free experience</span>
                         <span>Beta features</span>
+                        <span>+30 AI Credits</span>
                     </div>
+                    <button onclick="handleSubscription('full')" class="btn">Subscribe</button>
                 </div>
             </div>
         </div>
-        <button onclick="window.location.href='/'" style="padding: 1rem 2rem; background: #007bff; color: white; border: none; border-radius: 4px; cursor: pointer;">Back to Home</button>
+        
+        <div class="subscription-section">
+            <h3>AI Credits Packages:</h3>
+            <div class="subscription-grid">
+                <div class="subscription-box">
+                    <h4>Starter</h4>
+                    <p>$2.00</p>
+                    <div class="features">
+                        <span>10 AI Credits</span>
+                    </div>
+                    <button onclick="handleCreditsPurchase(10, 2.00)" class="btn">Purchase</button>
+                </div>
+                <div class="subscription-box">
+                    <h4>Standard</h4>
+                    <p>$4.50</p>
+                    <div class="features">
+                        <span>30 AI Credits</span>
+                    </div>
+                    <button onclick="handleCreditsPurchase(30, 4.50)" class="btn">Purchase</button>
+                </div>
+                <div class="subscription-box">
+                    <h4>Premium</h4>
+                    <p>$7.00</p>
+                    <div class="features">
+                        <span>50 AI Credits</span>
+                    </div>
+                    <button onclick="handleCreditsPurchase(50, 7.00)" class="btn">Purchase</button>
+                </div>
+            </div>
+        </div>
+        <button onclick="window.location.href='/'" class="btn">Back to Home</button>
     </main>
     
+    <script>
+        async function handleSubscription(plan) {
+            const token = localStorage.getItem('token');
+            if (!token) {
+                window.location.href = '/login';
+                return;
+            }
+            
+            try {
+                const response = await fetch('/subscription/upgrade', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    },
+                    body: JSON.stringify({ plan })
+                });
+                
+                const result = await response.json();
+                if (result.success) {
+                    alert(`Successfully upgraded to ${plan}! You received 30 AI credits.`);
+                    window.location.href = '/profile';
+                } else {
+                    alert(result.message || 'Subscription failed');
+                }
+            } catch (error) {
+                alert('Subscription failed. Please try again.');
+                console.error('Error:', error);
+            }
+        }
+        
+        async function handleCreditsPurchase(credits, price) {
+            const token = localStorage.getItem('token');
+            if (!token) {
+                window.location.href = '/login';
+                return;
+            }
+            
+            try {
+                const response = await fetch('/credits/purchase', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    },
+                    body: JSON.stringify({ credits, price })
+                });
+                
+                const result = await response.json();
+                if (result.success) {
+                    alert(`Successfully purchased ${credits} AI credits!`);
+                    window.location.href = '/profile';
+                } else {
+                    alert(result.message || 'Purchase failed');
+                }
+            } catch (error) {
+                alert('Purchase failed. Please try again.');
+            }
+        }
+    </script>
+    <div id="footer-root"></div>
     <script src="header-init.js"></script>
     <script src="dist/header.bundle.js"></script>
+    <script src="dist/footer.bundle.js"></script>
 </body>
 </html>

@@ -272,17 +272,20 @@ footer a:hover {
 
 .btn {
     display: inline-block;
-    background: #3498db;
+    background: #007bff;
     color: white;
     padding: 0.8rem 2rem;
     text-decoration: none;
     border-radius: 5px;
     margin-top: 1rem;
     transition: background 0.3s;
+    border: none;
+    cursor: pointer;
+    font-weight: 600;
 }
 
 .btn:hover {
-    background: #2980b9;
+    background: #0056b3;
 }
 
 .calculator {
@@ -853,8 +856,29 @@ footer a:hover {
     transform: translateY(-10px);
 }
 
+.subscription-box .btn {
+    margin-top: 1rem;
+}
+
 .features {
     display: flex;
     flex-direction: column;
     align-items: flex-start;
+}
+
+.subscription-page {
+    text-align: center;
+    padding: 3rem;
+}
+
+.subscription-section {
+    margin: 2rem 0;
+}
+
+.subscription-grid {
+    display: flex;
+    justify-content: center;
+    gap: 2rem;
+    margin-top: 2rem;
+    flex-wrap: wrap;
 }

@@ -28,6 +28,7 @@
     "http-proxy-middleware": "^2.0.6",
     "jsonwebtoken": "^9.0.2",
     "mathjs": "^12.2.1",
+    "multer": "^2.0.0-rc.4",
     "nodemailer": "^7.0.5",
     "openai": "^4.20.1",
     "passport": "^0.7.0",

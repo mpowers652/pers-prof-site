@@ -24,6 +24,13 @@ const { SecretManagerServiceClient } = require('@google-cloud/secret-manager');
 const express = require('express');
 const https = require('https');
 const fs = require('fs');
+const multer = require('multer');
+
+// Configure multer for file uploads
+const upload = multer({
+    limits: { fileSize: 100 * 1024 * 1024 }, // 100MB limit
+    storage: multer.memoryStorage()
+});
 
 // Initialize Secret Manager client
 const secretClient = new SecretManagerServiceClient();
@@ -131,7 +138,8 @@ app.use((req, res, next) => {
 
 // Parse URL-encoded bodies and JSON
 app.use(express.urlencoded({ extended: true }));
-app.use(express.json());
+app.use(express.json({ limit: '100mb' }));
+app.use(express.raw({ limit: '100mb' }));
 app.use(cookieParser());
 // Use FileStore in production, MemoryStore in development or when store init fails
 const session = require('express-session');
@@ -167,6 +175,7 @@ app.use(passport.session());
 // Serve static files BEFORE authentication
 app.use('/images', express.static(path.join(__dirname, 'images')));
 app.use(express.static('.', { index: false }));
+app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
 // Security middleware: reject any request that includes a token in the URL querystring
 // Tokens should never be passed via URL parameters. For security tests and real-world hardening,
@@ -1510,6 +1519,57 @@ app.post('/auth/upload-profile-image', express.json(), (req, res) => {
     }
 });
 
+// Video upload endpoint
+app.post('/upload-video', upload.single('file'), (req, res) => {
+    try {
+        if (!req.file) {
+            return res.status(400).json({ success: false, error: 'No file uploaded' });
+        }
+        
+        const timestamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, -5);
+        const filename = req.file.originalname || `video-${timestamp}.webm`;
+        const uploadPath = path.join(__dirname, 'uploads', filename);
+        
+        // Parse selected platforms
+        const platforms = req.body.platforms ? JSON.parse(req.body.platforms) : [];
+        
+        // Create uploads directory if it doesn't exist
+        const uploadsDir = path.join(__dirname, 'uploads');
+        if (!fs.existsSync(uploadsDir)) {
+            fs.mkdirSync(uploadsDir, { recursive: true });
+        }
+        
+        // Save the file
+        fs.writeFileSync(uploadPath, req.file.buffer);
+        
+        console.log(`Video uploaded: ${filename} for platforms: ${platforms.join(', ')}`);
+        
+        // Here you would integrate with actual social media APIs
+        // For now, we'll just log the platforms and return success
+        const platformMessages = platforms.map(platform => {
+            switch(platform) {
+                case 'youtube': return 'YouTube upload queued';
+                case 'twitter': return 'Twitter upload queued';
+                case 'tiktok': return 'TikTok upload queued';
+                case 'snapchat': return 'Snapchat upload queued';
+                case 'instagram': return 'Instagram upload queued';
+                default: return `${platform} upload queued`;
+            }
+        });
+        
+        res.json({ 
+            success: true, 
+            filename, 
+            platforms,
+            message: 'Video uploaded successfully',
+            platformStatus: platformMessages
+        });
+    } catch (error) {
+        console.error('Video upload error:', error);
+        res.status(500).json({ success: false, error: 'Upload failed' });
+    }
+});
+
 // Helper to extract user from request by checking Authorization header, cookie, or session
 function getUserFromReq(req) {
     const token = req.headers.authorization?.split(' ')[1] || req.cookies.token || req.session?.authToken;
@@ -1521,6 +1581,64 @@ function getUserFromReq(req) {
         return null;
     }
 }
+
+// Subscription upgrade endpoint
+app.post('/subscription/upgrade', express.json(), (req, res) => {
+    const token = req.headers.authorization?.split(' ')[1] || req.cookies.token;
+    if (!token) return res.status(401).json({ success: false, message: 'Access denied' });
+    
+    try {
+        const decoded = jwt.verify(token, 'secret');
+        const user = users.find(u => u.id === decoded.id);
+        if (!user) return res.status(404).json({ success: false, message: 'User not found' });
+        
+        const { plan } = req.body;
+        if (!['premium', 'full'].includes(plan)) {
+            return res.status(400).json({ success: false, message: 'Invalid plan' });
+        }
+        
+        user.subscription = plan;
+        if (plan === 'full') {
+            user.aiCredits = (user.aiCredits || 0) + 30;
+        }
+        
+        console.log(`User ${user.username} upgraded to ${plan}, AI credits: ${user.aiCredits}`);
+        res.json({ success: true, message: 'Subscription upgraded', aiCredits: user.aiCredits });
+    } catch (error) {
+        res.status(500).json({ success: false, message: 'Upgrade failed' });
+    }
+});
+
+// Credits purchase endpoint
+app.post('/credits/purchase', express.json(), (req, res) => {
+    const token = req.headers.authorization?.split(' ')[1] || req.cookies.token;
+    if (!token) return res.status(401).json({ success: false, message: 'Access denied' });
+    
+    try {
+        const decoded = jwt.verify(token, 'secret');
+        const user = users.find(u => u.id === decoded.id);
+        if (!user) return res.status(404).json({ success: false, message: 'User not found' });
+        
+        const { credits, price } = req.body;
+        const validPackages = [
+            { credits: 10, price: 2.00 },
+            { credits: 30, price: 4.50 },
+            { credits: 50, price: 7.00 }
+        ];
+        
+        const isValid = validPackages.some(pkg => pkg.credits === credits && pkg.price === price);
+        if (!isValid) {
+            return res.status(400).json({ success: false, message: 'Invalid package' });
+        }
+        
+        user.aiCredits = (user.aiCredits || 0) + credits;
+        
+        console.log(`User ${user.username} purchased ${credits} credits, total: ${user.aiCredits}`);
+        res.json({ success: true, message: 'Credits purchased', aiCredits: user.aiCredits });
+    } catch (error) {
+        res.status(500).json({ success: false, message: 'Purchase failed' });
+    }
+});
 
 // HTTPS server startup function
 function startServer(port) {

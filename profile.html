@@ -46,6 +46,17 @@
                             </div>
                         </div>
                         
+                        <div style="background: rgba(0,0,0,0.2); padding: 1.5rem; border-radius: 8px; margin-bottom: 2rem;">
+                            <h4 style="margin-top: 0; color: #2196F3;">AI Credits</h4>
+                            <div style="display: flex; align-items: center; gap: 1rem;">
+                                <div style="flex: 1; background: rgba(255,255,255,0.1); border-radius: 8px; padding: 1rem;">
+                                    <div style="font-size: 2rem; font-weight: bold; color: #4CAF50;">${user.aiCredits || 0}</div>
+                                    <div style="font-size: 0.9rem; color: rgba(255,255,255,0.7);">Available Credits</div>
+                                </div>
+                                ${!user.openaiKey ? '<div style="flex: 1;"><a href="/request-api-key" class="btn" style="width: 100%; text-align: center;">Request AI Access</a></div>' : '<div style="flex: 1; color: #4CAF50; text-align: center;">✓ AI Access Enabled</div>'}
+                            </div>
+                        </div>
+                        
                         <div style="display: flex; gap: 1rem; flex-wrap: wrap;">
                             ${user.role !== 'admin' ? '<a href="/subscription" class="btn">Manage Subscription</a>' : ''}
                             <a href="/logout" class="btn" style="background: #f44336;">Log Out</a>
@@ -60,7 +71,9 @@
         window.addEventListener('DOMContentLoaded', loadProfile);
     </script>
     
+    <div id="footer-root"></div>
     <script src="header-init.js"></script>
     <script src="dist/header.bundle.js"></script>
+    <script src="dist/footer.bundle.js"></script>
 </body>
 </html>
