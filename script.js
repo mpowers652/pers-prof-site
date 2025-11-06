@@ -313,7 +313,7 @@ function initializeServices() {
             <div class="service-icon">${service.icon}</div>
             <h3>${service.name}</h3>
             <p>${service.description}</p>
-            ${service.premium ? '<span class="premium-badge">Premium</span>' : ''}
+            ${service.premium ? '<span class="premium-badge">Full subscription required</span>' : ''}
         `;
         
         serviceCard.onclick = () => {
