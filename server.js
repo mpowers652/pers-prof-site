@@ -69,6 +69,7 @@ async function loadConditionalSecret(secretName, envVar) {
 }
 const path = require('path');
 const cookieParser = require('cookie-parser');
+const sharp = require('sharp');
 const { createProxyMiddleware } = require('http-proxy-middleware');
 const { evaluate, simplify } = require('mathjs');
 const nodemailer = require('nodemailer');
@@ -1536,8 +1537,60 @@ app.post('/auth/upload-profile-image', express.json(), (req, res) => {
     }
 });
 
+// Generate cover image endpoint
+app.post('/generate-cover-image', express.json(), async (req, res) => {
+    const token = req.headers.authorization?.split(' ')[1] || req.cookies.token;
+    if (!token) return res.status(401).json({ error: 'Access denied' });
+    
+    try {
+        const decoded = jwt.verify(token, 'secret');
+        const user = users.find(u => u.id === decoded.id);
+        if (!user) return res.status(404).json({ error: 'User not found' });
+        
+        if (user.aiCredits < 2) {
+            return res.status(400).json({ error: 'Insufficient AI credits' });
+        }
+        
+        user.aiCredits -= 2;
+        
+        const orgId = await loadConditionalSecret('OPENAI_ORG_ID', 'OPENAI_ORG_ID');
+        const masterKey = await loadConditionalSecret('OPENAI_MASTER_API_KEY', 'OPENAI_MASTER_API_KEY');
+        const apiKey = user.role === 'admin' ? (masterKey || process.env.OPENAI_API_KEY) : user.openaiKey;
+        
+        if (!apiKey) {
+            user.aiCredits += 2;
+            return res.status(500).json({ error: 'AI service unavailable' });
+        }
+        
+        const openai = new OpenAI({ apiKey, organization: orgId });
+        const imageResponse = await openai.images.generate({
+            model: 'dall-e-2',
+            prompt: 'Abstract audio visualization cover art with vibrant colors and waveforms',
+            n: 1,
+            size: '1024x1024'
+        });
+        
+        const imageUrl = imageResponse.data[0].url;
+        console.log(`Cover image generated for ${user.username}, AI credits: ${user.aiCredits}`);
+        
+        res.json({ success: true, imageUrl, aiCredits: user.aiCredits });
+    } catch (error) {
+        console.error('Image generation error:', error);
+        res.status(500).json({ error: 'Image generation failed' });
+    }
+});
+
+// Platform aspect ratios
+const platformAspectRatios = {
+    youtube: { width: 1280, height: 720 },      // 16:9
+    twitter: { width: 1200, height: 675 },      // 16:9
+    tiktok: { width: 1080, height: 1920 },      // 9:16
+    snapchat: { width: 1080, height: 1920 },    // 9:16
+    instagram: { width: 1080, height: 1080 }    // 1:1
+};
+
 // Video upload endpoint
-app.post('/upload-video', upload.single('file'), (req, res) => {
+app.post('/upload-video', upload.single('file'), async (req, res) => {
     try {
         if (!req.file) {
             return res.status(400).json({ success: false, error: 'No file uploaded' });
@@ -1549,6 +1602,44 @@ app.post('/upload-video', upload.single('file'), (req, res) => {
         
         // Parse selected platforms
         const platforms = req.body.platforms ? JSON.parse(req.body.platforms) : [];
+        const coverImageUrl = req.body.coverImageUrl;
+        
+        let imageGenerated = false;
+        let coverImagePath = null;
+        const croppedImages = {};
+        
+        // Save and crop cover image if provided
+        if (coverImageUrl) {
+            try {
+                const imageData = await fetch(coverImageUrl).then(r => r.buffer());
+                
+                // Crop image for each platform
+                for (const platform of platforms) {
+                    if (platformAspectRatios[platform]) {
+                        const { width, height } = platformAspectRatios[platform];
+                        const croppedFilename = `cover-${platform}-${timestamp}.png`;
+                        const croppedPath = path.join(__dirname, 'uploads', croppedFilename);
+                        
+                        await sharp(imageData)
+                            .resize(width, height, { fit: 'cover', position: 'center' })
+                            .png()
+                            .toFile(croppedPath);
+                        
+                        croppedImages[platform] = croppedFilename;
+                        console.log(`Cover image cropped for ${platform}: ${croppedFilename}`);
+                    }
+                }
+                
+                // Save original as well
+                const coverFilename = `cover-original-${timestamp}.png`;
+                coverImagePath = path.join(__dirname, 'uploads', coverFilename);
+                fs.writeFileSync(coverImagePath, imageData);
+                imageGenerated = true;
+                console.log(`Original cover image saved: ${coverFilename}`);
+            } catch (error) {
+                console.error('Cover image save error:', error.message);
+            }
+        }
         
         // Create uploads directory if it doesn't exist
         const uploadsDir = path.join(__dirname, 'uploads');
@@ -1579,7 +1670,10 @@ app.post('/upload-video', upload.single('file'), (req, res) => {
             filename, 
             platforms,
             message: 'Video uploaded successfully',
-            platformStatus: platformMessages
+            platformStatus: platformMessages,
+            imageGenerated,
+            coverImage: coverImagePath ? path.basename(coverImagePath) : null,
+            croppedImages
         });
     } catch (error) {
         console.error('Video upload error:', error);

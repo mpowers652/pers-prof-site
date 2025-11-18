@@ -334,7 +334,19 @@
                         <button id="closeModal" class="close-btn">&times;</button>
                     </div>
                     <div class="modal-body">
+                        <div id="imagePreviewSection" class="hidden" style="margin-bottom: 1.5rem; text-align: center;">
+                            <p style="margin-bottom: 0.5rem; font-weight: bold;">Cover Image Preview:</p>
+                            <img id="coverImagePreview" style="max-width: 100%; max-height: 300px; border-radius: 8px; margin-bottom: 1rem;" />
+                            <button id="regenerateImage" class="btn btn-secondary" style="margin-bottom: 1rem;">Regenerate Image (2 AI credits)</button>
+                        </div>
                         <p>Select platforms to upload your video:</p>
+                        <div class="platform-checkboxes">
+                            <label class="platform-option" style="background: rgba(255, 165, 0, 0.1); border: 1px solid rgba(255, 165, 0, 0.3);">
+                                <input type="checkbox" id="generateImage" name="generateImage">
+                                <span class="platform-name">Generate image from audio <span style="color: #ffa500; font-size: 0.9rem;">(⚠️ Costs 2 AI credits)</span></span>
+                            </label>
+                        </div>
+                        <p style="margin-top: 1rem;">Select platforms:</p>
                         <div class="platform-checkboxes">
                             <label class="platform-option">
                                 <input type="checkbox" name="platform" value="youtube">
@@ -400,6 +412,8 @@
         console.log('Story section visible:', document.getElementById('storySection')?.offsetHeight > 0);
         
         // Initialize FFT controls after DOM loads
+        let currentCoverImageUrl = null;
+        
         window.addEventListener('DOMContentLoaded', () => {
             console.log('✅ DOM loaded - checking story section');
             const storySection = document.getElementById('storySection');
@@ -412,6 +426,8 @@
             document.getElementById('closeModal').addEventListener('click', hideUploadModal);
             document.getElementById('cancelUpload').addEventListener('click', hideUploadModal);
             document.getElementById('confirmUpload').addEventListener('click', handleUploadToPlatforms);
+            document.getElementById('generateImage').addEventListener('change', handleGenerateImageToggle);
+            document.getElementById('regenerateImage').addEventListener('click', regenerateCoverImage);
             
             // Close modal when clicking outside
             document.getElementById('uploadModal').addEventListener('click', (e) => {
@@ -848,10 +864,69 @@
         
         function hideUploadModal() {
             document.getElementById('uploadModal').classList.add('hidden');
+            document.getElementById('imagePreviewSection').classList.add('hidden');
+            document.getElementById('generateImage').checked = false;
+            currentCoverImageUrl = null;
             // Uncheck all platforms
             document.querySelectorAll('input[name="platform"]').forEach(checkbox => {
                 checkbox.checked = false;
             });
+        }
+        
+        async function handleGenerateImageToggle(e) {
+            if (e.target.checked) {
+                await generateCoverImage();
+            } else {
+                document.getElementById('imagePreviewSection').classList.add('hidden');
+                currentCoverImageUrl = null;
+            }
+        }
+        
+        async function generateCoverImage() {
+            const token = localStorage.getItem('token');
+            if (!token) {
+                alert('Please log in to generate images');
+                document.getElementById('generateImage').checked = false;
+                return;
+            }
+            
+            try {
+                const generateBtn = document.getElementById('generateImage');
+                const originalText = generateBtn.parentElement.querySelector('.platform-name').textContent;
+                generateBtn.parentElement.querySelector('.platform-name').textContent = 'Generating image...';
+                generateBtn.disabled = true;
+                
+                const response = await fetch('/generate-cover-image', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    }
+                });
+                
+                if (response.ok) {
+                    const result = await response.json();
+                    currentCoverImageUrl = result.imageUrl;
+                    document.getElementById('coverImagePreview').src = result.imageUrl;
+                    document.getElementById('imagePreviewSection').classList.remove('hidden');
+                } else {
+                    const error = await response.json();
+                    alert(error.error || 'Image generation failed');
+                    document.getElementById('generateImage').checked = false;
+                }
+            } catch (error) {
+                console.error('Image generation error:', error);
+                alert('Image generation failed');
+                document.getElementById('generateImage').checked = false;
+            } finally {
+                const generateBtn = document.getElementById('generateImage');
+                generateBtn.parentElement.querySelector('.platform-name').innerHTML = 'Generate image from audio <span style="color: #ffa500; font-size: 0.9rem;">(⚠️ Costs 2 AI credits)</span>';
+                generateBtn.disabled = false;
+            }
+        }
+        
+        async function regenerateCoverImage() {
+            await generateCoverImage();
         }
         
         async function handleUploadToPlatforms() {
@@ -881,6 +956,9 @@
             const formData = new FormData();
             formData.append('file', blob, filename);
             formData.append('platforms', JSON.stringify(selectedPlatforms));
+            if (currentCoverImageUrl) {
+                formData.append('coverImageUrl', currentCoverImageUrl);
+            }
             
             try {
                 const confirmBtn = document.getElementById('confirmUpload');
@@ -894,7 +972,17 @@
                 
                 if (response.ok) {
                     const result = await response.json();
-                    alert(`Upload successful to ${selectedPlatforms.join(', ')}! File saved as: ${result.filename}`);
+                    let message = `Upload successful to ${selectedPlatforms.join(', ')}! File saved as: ${result.filename}`;
+                    if (result.imageGenerated && result.coverImage) {
+                        message += `\n\nOriginal cover image: ${result.coverImage}`;
+                        if (result.croppedImages && Object.keys(result.croppedImages).length > 0) {
+                            message += '\n\nCropped images:';
+                            for (const [platform, filename] of Object.entries(result.croppedImages)) {
+                                message += `\n  ${platform}: ${filename}`;
+                            }
+                        }
+                    }
+                    alert(message);
                     hideUploadModal();
                 } else {
                     throw new Error('Upload failed');
