@@ -4,6 +4,36 @@
     box-sizing: border-box;
 }
 
+body {
+    position: relative;
+    min-height: 100vh;
+    background: 
+        repeating-linear-gradient(45deg, #1a1a2e 0px, #1a1a2e 20px, #16213e 20px, #16213e 40px),
+        repeating-linear-gradient(-45deg, #0f3460 0px, #0f3460 20px, #16213e 20px, #16213e 40px);
+    background-size: 100% 100%;
+}
+
+body::before {
+    content: '';
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(135deg, rgba(102, 126, 234, 0.6) 0%, rgba(118, 75, 162, 0.6) 25%, rgba(240, 147, 251, 0.6) 50%, rgba(79, 172, 254, 0.6) 75%, rgba(0, 242, 254, 0.6) 100%);
+    background-size: 400% 400%;
+    animation: gradientShift 15s ease infinite;
+    pointer-events: none;
+    z-index: 0;
+    mix-blend-mode: screen;
+}
+
+@keyframes gradientShift {
+    0% { background-position: 0% 50%; }
+    50% { background-position: 100% 50%; }
+    100% { background-position: 0% 50%; }
+}
+
 h1 {
     color: white;
     text-decoration: none;
@@ -155,6 +185,8 @@ main {
     max-width: 1200px;
     margin: 0 auto;
     padding: 2rem;
+    position: relative;
+    z-index: 1;
 }
 
 section {
@@ -237,12 +269,15 @@ section {
 }
 
 header {
-    background: #2c3e50;
+    background: rgba(44, 62, 80, 0.9);
     color: white;
     padding: 1rem 2rem;
     display: flex;
     justify-content: space-between;
     align-items: center;
+    position: relative;
+    z-index: 10;
+    backdrop-filter: blur(10px);
 }
 
 header h1 {
@@ -254,11 +289,14 @@ header h1 {
 }
 
 footer {
-    background: #34495e;
+    background: rgba(52, 73, 94, 0.9);
     color: white;
     text-align: center;
     padding: 2rem;
     margin-top: 3rem;
+    position: relative;
+    z-index: 10;
+    backdrop-filter: blur(10px);
 }
 
 footer a {
