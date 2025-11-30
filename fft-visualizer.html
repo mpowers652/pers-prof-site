@@ -52,6 +52,7 @@
         .page-header {
             text-align: center;
             margin-bottom: 2rem;
+            color: #fff;
         }
 
         .controls-container {
@@ -73,6 +74,235 @@
             background: rgba(0, 0, 0, 0.2);
             padding: 1rem;
             border-radius: 4px;
+            color: #fff;
+        }
+
+        .audio-controls-wrapper {
+            display: flex;
+            gap: 2rem;
+            margin: 2rem auto;
+            max-width: 1200px;
+            justify-content: center;
+        }
+
+        .filter-keyboard {
+            flex: 1;
+            background: rgba(0, 0, 0, 0.3);
+            padding: 1.5rem;
+            border-radius: 8px;
+        }
+
+        .sound-effects {
+            width: 250px;
+            background: rgba(0, 0, 0, 0.3);
+            padding: 1.5rem;
+            border-radius: 8px;
+        }
+
+        .sound-effects h3 {
+            text-align: center;
+            margin-bottom: 1rem;
+            color: #fff;
+        }
+
+        .sound-effect-btn {
+            width: 100%;
+            padding: 0.75rem;
+            margin-bottom: 0.5rem;
+            background: linear-gradient(135deg, #ff6b6b 0%, #ee5a6f 100%);
+            border: 2px solid rgba(255, 255, 255, 0.2);
+            border-radius: 6px;
+            color: white;
+            cursor: pointer;
+            transition: all 0.2s;
+            font-weight: 500;
+        }
+
+        .sound-effect-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+        }
+
+        .filter-keyboard h3 {
+            text-align: center;
+            margin-bottom: 1rem;
+            color: #fff;
+        }
+
+        .filter-keys {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
+            gap: 0.5rem;
+        }
+
+        .filter-key {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border: 2px solid rgba(255, 255, 255, 0.2);
+            border-radius: 6px;
+            padding: 1rem 0.5rem;
+            cursor: pointer;
+            transition: all 0.2s;
+            text-align: center;
+            color: white;
+            font-weight: 500;
+        }
+
+        .filter-key:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+        }
+
+        .filter-key.active {
+            border-color: currentColor;
+            box-shadow: 0 0 15px currentColor;
+        }
+
+        .filter-key[data-filter="none"].active {
+            background: linear-gradient(135deg, #6c757d 0%, #495057 100%);
+            color: #fff;
+        }
+
+        .filter-key[data-filter="lowpass"].active {
+            background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+            color: #fff;
+        }
+
+        .filter-key[data-filter="highpass"].active {
+            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+            color: #fff;
+        }
+
+        .filter-key[data-filter="bandpass"].active {
+            background: linear-gradient(135deg, #feca57 0%, #ff9ff3 100%);
+            color: #000;
+        }
+
+        .filter-key[data-filter="lowshelf"].active {
+            background: linear-gradient(135deg, #48c6ef 0%, #6f86d6 100%);
+            color: #fff;
+        }
+
+        .filter-key[data-filter="highshelf"].active {
+            background: linear-gradient(135deg, #fa709a 0%, #fee140 100%);
+            color: #000;
+        }
+
+        .filter-key[data-filter="peaking"].active {
+            background: linear-gradient(135deg, #30cfd0 0%, #330867 100%);
+            color: #fff;
+        }
+
+        .filter-key[data-filter="notch"].active {
+            background: linear-gradient(135deg, #a8edea 0%, #fed6e3 100%);
+            color: #000;
+        }
+
+        .filter-key[data-filter="compressor"].active {
+            background: linear-gradient(135deg, #ff6b6b 0%, #ee5a6f 100%);
+            color: #fff;
+        }
+
+        .filter-key[data-filter="reverb"].active {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: #fff;
+        }
+
+        .filter-key[data-filter="delay"].active {
+            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+            color: #fff;
+        }
+
+        .filter-key[data-filter="distortion"].active {
+            background: linear-gradient(135deg, #fa8231 0%, #d62976 100%);
+            color: #fff;
+        }
+
+        .filter-key[data-filter="chorus"].active {
+            background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+            color: #fff;
+        }
+
+        .filter-key[data-filter="phaser"].active {
+            background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%);
+            color: #000;
+        }
+
+        .filter-key[data-filter="bassboost"].active {
+            background: linear-gradient(135deg, #fa709a 0%, #fee140 100%);
+            color: #000;
+        }
+
+        .filter-key[data-filter="vocalbright"].active {
+            background: linear-gradient(135deg, #ffecd2 0%, #fcb69f 100%);
+            color: #000;
+        }
+
+        .equalizer-container {
+            margin: 2rem auto;
+            max-width: 900px;
+            background: rgba(0, 0, 0, 0.3);
+            padding: 1.5rem;
+            border-radius: 8px;
+        }
+
+        .equalizer-container h3 {
+            text-align: center;
+            margin-bottom: 1rem;
+            color: #fff;
+        }
+
+        .eq-bands {
+            display: flex;
+            justify-content: space-around;
+            align-items: flex-end;
+            gap: 1rem;
+            padding: 1rem;
+        }
+
+        .eq-band {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .eq-slider {
+            writing-mode: bt-lr;
+            -webkit-appearance: slider-vertical;
+            appearance: slider-vertical;
+            width: 30px;
+            height: 150px;
+            background: linear-gradient(to top, #4facfe 0%, #00f2fe 100%);
+            border-radius: 15px;
+            outline: none;
+        }
+
+        .eq-slider::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 30px;
+            height: 15px;
+            background: #fff;
+            border-radius: 5px;
+            cursor: pointer;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.3);
+        }
+
+        .eq-label {
+            color: #fff;
+            font-size: 0.9rem;
+            font-weight: 500;
+        }
+
+        .eq-value {
+            color: #4facfe;
+            font-size: 0.8rem;
+        }
+
+        .page-header p {
+            max-width: 800px;
+            margin: 1rem auto;
+            color: #fff;
+            line-height: 1.6;
         }
 
         .visualizer-container {
@@ -334,7 +564,7 @@
     <div class="page-container">
         <header class="page-header">
             <h2>FFT Audio Visualizer</h2>
-            <p style="max-width: 800px; margin: 1rem auto; color: #666; line-height: 1.6;">
+            <p>
                 Create stunning audio visualizations in real-time using your microphone. Record audio with synchronized FFT frequency analysis, 
                 download your recordings, and share directly to social media platforms. Perfect for musicians, podcasters, and content creators.
             </p>
@@ -343,7 +573,10 @@
         <main>
             <div class="controls-container">
                 <div class="controls">
-                    <button id="startBtn" class="btn">Start Microphone</button>
+                    <div style="display: flex; flex-direction: column; gap: 0.5rem; align-items: center;">
+                        <button id="startBtn" class="btn">Start Microphone</button>
+                        <label style="color: #fff;"><input type="checkbox" id="includeProfile" checked> Include Profile Photo</label>
+                    </div>
                     <div class="aspect-ratio-group">
                         <p>Window Layout:</p>
                         <label><input type="radio" name="aspectRatio" value="16:9" checked> Side by Side</label>
@@ -370,7 +603,7 @@
                     <div class="modal-body">
                         <div id="imagePreviewSection" class="hidden image-preview-section">
                             <p>Cover Image Preview:</p>
-                            <img id="coverImagePreview" />
+                            <img id="coverImagePreview" alt="Generated cover preview" />
                             <button id="regenerateImage" class="btn btn-secondary">Regenerate Image (2 AI credits)</button>
                         </div>
                         <p>Select platforms to upload your video:</p>
@@ -411,12 +644,101 @@
                 </div>
             </div>
             
+            <div class="audio-controls-wrapper">
+                <div class="filter-keyboard">
+                    <h3>Audio Filters</h3>
+                    <div class="filter-keys">
+                    <div class="filter-key" data-filter="none">None</div>
+                    <div class="filter-key" data-filter="lowpass">Low Pass</div>
+                    <div class="filter-key" data-filter="highpass">High Pass</div>
+                    <div class="filter-key" data-filter="bandpass">Band Pass</div>
+                    <div class="filter-key" data-filter="lowshelf">Low Shelf</div>
+                    <div class="filter-key" data-filter="highshelf">High Shelf</div>
+                    <div class="filter-key" data-filter="peaking">Peaking</div>
+                    <div class="filter-key" data-filter="notch">Notch</div>
+                    <div class="filter-key" data-filter="compressor">Compressor</div>
+                    <div class="filter-key" data-filter="reverb">Reverb</div>
+                    <div class="filter-key" data-filter="delay">Delay</div>
+                    <div class="filter-key" data-filter="distortion">Distortion</div>
+                    <div class="filter-key" data-filter="chorus">Chorus</div>
+                    <div class="filter-key" data-filter="phaser">Phaser</div>
+                    <div class="filter-key" data-filter="bassboost">Bass Boost</div>
+                    <div class="filter-key" data-filter="vocalbright">Vocal Bright</div>
+                    </div>
+                </div>
+                
+                <div class="sound-effects">
+                    <h3>Sound Effects</h3>
+                    <button class="sound-effect-btn">🎺 Air Horn</button>
+                    <button class="sound-effect-btn">👏 Applause</button>
+                    <button class="sound-effect-btn">🥁 Drum Roll</button>
+                    <button class="sound-effect-btn">😂 Laugh Track</button>
+                    <button class="sound-effect-btn">💥 Explosion</button>
+                </div>
+            </div>
+            
+            <div class="equalizer-container">
+                <h3>Volume Equalizer</h3>
+                <div class="eq-bands">
+                    <div class="eq-band">
+                        <input type="range" class="eq-slider" min="-12" max="12" value="0" step="0.5" orient="vertical" data-freq="60" aria-label="60Hz equalizer band">
+                        <span class="eq-value">0dB</span>
+                        <span class="eq-label">60Hz</span>
+                    </div>
+                    <div class="eq-band">
+                        <input type="range" class="eq-slider" min="-12" max="12" value="0" step="0.5" orient="vertical" data-freq="170" aria-label="170Hz equalizer band">
+                        <span class="eq-value">0dB</span>
+                        <span class="eq-label">170Hz</span>
+                    </div>
+                    <div class="eq-band">
+                        <input type="range" class="eq-slider" min="-12" max="12" value="0" step="0.5" orient="vertical" data-freq="310" aria-label="310Hz equalizer band">
+                        <span class="eq-value">0dB</span>
+                        <span class="eq-label">310Hz</span>
+                    </div>
+                    <div class="eq-band">
+                        <input type="range" class="eq-slider" min="-12" max="12" value="0" step="0.5" orient="vertical" data-freq="600" aria-label="600Hz equalizer band">
+                        <span class="eq-value">0dB</span>
+                        <span class="eq-label">600Hz</span>
+                    </div>
+                    <div class="eq-band">
+                        <input type="range" class="eq-slider" min="-12" max="12" value="0" step="0.5" orient="vertical" data-freq="1000" aria-label="1kHz equalizer band">
+                        <span class="eq-value">0dB</span>
+                        <span class="eq-label">1kHz</span>
+                    </div>
+                    <div class="eq-band">
+                        <input type="range" class="eq-slider" min="-12" max="12" value="0" step="0.5" orient="vertical" data-freq="3000" aria-label="3kHz equalizer band">
+                        <span class="eq-value">0dB</span>
+                        <span class="eq-label">3kHz</span>
+                    </div>
+                    <div class="eq-band">
+                        <input type="range" class="eq-slider" min="-12" max="12" value="0" step="0.5" orient="vertical" data-freq="6000" aria-label="6kHz equalizer band">
+                        <span class="eq-value">0dB</span>
+                        <span class="eq-label">6kHz</span>
+                    </div>
+                    <div class="eq-band">
+                        <input type="range" class="eq-slider" min="-12" max="12" value="0" step="0.5" orient="vertical" data-freq="12000" aria-label="12kHz equalizer band">
+                        <span class="eq-value">0dB</span>
+                        <span class="eq-label">12kHz</span>
+                    </div>
+                    <div class="eq-band">
+                        <input type="range" class="eq-slider" min="-12" max="12" value="0" step="0.5" orient="vertical" data-freq="14000" aria-label="14kHz equalizer band">
+                        <span class="eq-value">0dB</span>
+                        <span class="eq-label">14kHz</span>
+                    </div>
+                    <div class="eq-band">
+                        <input type="range" class="eq-slider" min="-12" max="12" value="0" step="0.5" orient="vertical" data-freq="16000" aria-label="16kHz equalizer band">
+                        <span class="eq-value">0dB</span>
+                        <span class="eq-label">16kHz</span>
+                    </div>
+                </div>
+            </div>
+            
             <div class="visualizer-container">
                 <canvas id="canvas" width="800" height="450"></canvas>
             </div>
             
             <!-- React Story Generator Mount Point -->
-            <div id="story-generator-mount"></div>
+            <div id="story-generator-mount" style="display: flex; justify-content: center;"></div>
         </main>
 
         <!-- AdSense Ad Unit -->
@@ -427,7 +749,7 @@
                  data-ad-format="auto"
                  data-full-width-responsive="true"></ins>
             <script>
-                 var adsbygoogle = window.adsbygoogle || [];
+                 var adsbygoogle = globalThis.adsbygoogle || [];
                  adsbygoogle.push({});
             </script>
         </div>
@@ -439,6 +761,11 @@
         let mediaRecorder, recordedChunks = [];
         let videoRecorder, videoChunks = [];
         let videoOnlyRecorder, videoOnlyChunks = [];
+        let audioFilter = null;
+        let currentFilter = 'none';
+        let compressor, convolver, delayNode, distortionNode, gainNode;
+        let eqFilters = [];
+        let includeProfile = true;
 
         // Debug story section visibility
         console.log('🔍 Story section debugging:');
@@ -448,7 +775,7 @@
         // Initialize FFT controls after DOM loads
         let currentCoverImageUrl = null;
         
-        window.addEventListener('DOMContentLoaded', () => {
+        globalThis.addEventListener('DOMContentLoaded', () => {
             console.log('✅ DOM loaded - checking story section');
             const storySection = document.getElementById('storySection');
             console.log('Story section found:', !!storySection);
@@ -462,6 +789,9 @@
             document.getElementById('confirmUpload').addEventListener('click', handleUploadToPlatforms);
             document.getElementById('generateImage').addEventListener('change', handleGenerateImageToggle);
             document.getElementById('regenerateImage').addEventListener('click', regenerateCoverImage);
+            document.getElementById('includeProfile').addEventListener('change', (e) => {
+                includeProfile = e.target.checked;
+            });
             
             // Close modal when clicking outside
             document.getElementById('uploadModal').addEventListener('click', (e) => {
@@ -469,6 +799,18 @@
                     hideUploadModal();
                 }
             });
+            
+            for (const key of document.querySelectorAll('.filter-key')) {
+                key.addEventListener('click', () => applyFilter(key.dataset.filter));
+            }
+            
+            for (const slider of document.querySelectorAll('.eq-slider')) {
+                slider.addEventListener('input', (e) => {
+                    const value = e.target.value;
+                    e.target.parentElement.querySelector('.eq-value').textContent = `${value}dB`;
+                    updateEqualizer();
+                });
+            }
         });
 
         for (const radio of document.querySelectorAll('input[name="aspectRatio"]')) {
@@ -476,17 +818,17 @@
         }
 
         async function toggleVisualizer() {
-            if (!isRunning) {
-                await startVisualizer();
-            } else {
+            if (isRunning) {
                 stopVisualizer();
+            } else {
+                await startVisualizer();
             }
         }
 
 
 
         function setupAudioContext(stream) {
-            audioContext = new (window.AudioContext || window.webkitAudioContext)();
+            audioContext = new (globalThis.AudioContext || globalThis.webkitAudioContext)();
             analyser = audioContext.createAnalyser();
             microphone = audioContext.createMediaStreamSource(stream);
             
@@ -494,7 +836,184 @@
             const bufferLength = analyser.frequencyBinCount;
             dataArray = new Uint8Array(bufferLength);
             
-            microphone.connect(analyser);
+            audioFilter = audioContext.createBiquadFilter();
+            compressor = audioContext.createDynamicsCompressor();
+            convolver = audioContext.createConvolver();
+            delayNode = audioContext.createDelay();
+            distortionNode = audioContext.createWaveShaper();
+            gainNode = audioContext.createGain();
+            
+            setupEqualizer();
+            
+            microphone.connect(audioFilter);
+            audioFilter.connect(analyser);
+        }
+        
+        function setupEqualizer() {
+            const frequencies = [60, 170, 310, 600, 1000, 3000, 6000, 12000, 14000, 16000];
+            eqFilters = frequencies.map(freq => {
+                const filter = audioContext.createBiquadFilter();
+                filter.type = 'peaking';
+                filter.frequency.value = freq;
+                filter.Q.value = 1;
+                filter.gain.value = 0;
+                return filter;
+            });
+        }
+        
+        function updateEqualizer() {
+            if (!audioContext || eqFilters.length === 0) return;
+            
+            const sliders = document.querySelectorAll('.eq-slider');
+            let index = 0;
+            for (const slider of sliders) {
+                if (eqFilters[index]) {
+                    eqFilters[index].gain.value = Number.parseFloat(slider.value);
+                }
+                index++;
+            }
+        }
+
+        function disconnectAllNodes() {
+            microphone.disconnect();
+            audioFilter.disconnect();
+            if (compressor) compressor.disconnect();
+            if (convolver) convolver.disconnect();
+            if (delayNode) delayNode.disconnect();
+            if (distortionNode) distortionNode.disconnect();
+            if (gainNode) gainNode.disconnect();
+        }
+
+        function applyCompressor() {
+            compressor.threshold.value = -24;
+            compressor.knee.value = 30;
+            compressor.ratio.value = 12;
+            compressor.attack.value = 0.003;
+            compressor.release.value = 0.25;
+            microphone.connect(compressor);
+            compressor.connect(analyser);
+        }
+
+        function applyReverb() {
+            createReverb();
+            microphone.connect(convolver);
+            convolver.connect(analyser);
+        }
+
+        function applyDelay() {
+            delayNode.delayTime.value = 0.3;
+            gainNode.gain.value = 0.5;
+            microphone.connect(delayNode);
+            delayNode.connect(gainNode);
+            gainNode.connect(delayNode);
+            delayNode.connect(analyser);
+        }
+
+        function applyDistortion() {
+            distortionNode.curve = makeDistortionCurve(400);
+            distortionNode.oversample = '4x';
+            microphone.connect(distortionNode);
+            distortionNode.connect(analyser);
+        }
+
+        function applyChorus() {
+            const lfo = audioContext.createOscillator();
+            const depth = audioContext.createGain();
+            lfo.frequency.value = 0.5;
+            depth.gain.value = 0.002;
+            delayNode.delayTime.value = 0.02;
+            lfo.connect(depth);
+            depth.connect(delayNode.delayTime);
+            microphone.connect(delayNode);
+            delayNode.connect(analyser);
+            lfo.start();
+        }
+
+        function applyPhaser() {
+            const lfo = audioContext.createOscillator();
+            const depth = audioContext.createGain();
+            audioFilter.type = 'allpass';
+            audioFilter.frequency.value = 1000;
+            lfo.frequency.value = 0.5;
+            depth.gain.value = 500;
+            lfo.connect(depth);
+            depth.connect(audioFilter.frequency);
+            microphone.connect(audioFilter);
+            audioFilter.connect(analyser);
+            lfo.start();
+        }
+
+        function applyBasicFilter(config) {
+            audioFilter.type = config.type;
+            audioFilter.frequency.value = config.frequency;
+            if (config.Q) audioFilter.Q.value = config.Q;
+            if (config.gain) audioFilter.gain.value = config.gain;
+            microphone.connect(audioFilter);
+            audioFilter.connect(analyser);
+        }
+
+        function applyFilter(filterType) {
+            for (const k of document.querySelectorAll('.filter-key')) {
+                k.classList.remove('active');
+            }
+            document.querySelector(`[data-filter="${filterType}"]`).classList.add('active');
+            currentFilter = filterType;
+            
+            if (!audioFilter) return;
+            
+            disconnectAllNodes();
+            
+            const filterConfig = {
+                none: { type: 'allpass', frequency: 1000, Q: 1 },
+                lowpass: { type: 'lowpass', frequency: 1000, Q: 1 },
+                highpass: { type: 'highpass', frequency: 1000, Q: 1 },
+                bandpass: { type: 'bandpass', frequency: 1000, Q: 1 },
+                lowshelf: { type: 'lowshelf', frequency: 1000, gain: 10 },
+                highshelf: { type: 'highshelf', frequency: 1000, gain: 10 },
+                peaking: { type: 'peaking', frequency: 1000, Q: 1, gain: 10 },
+                notch: { type: 'notch', frequency: 1000, Q: 1 },
+                bassboost: { type: 'lowshelf', frequency: 200, gain: 15 },
+                vocalbright: { type: 'highshelf', frequency: 3000, gain: 8 }
+            };
+            
+            const filterActions = {
+                compressor: applyCompressor,
+                reverb: applyReverb,
+                delay: applyDelay,
+                distortion: applyDistortion,
+                chorus: applyChorus,
+                phaser: applyPhaser
+            };
+            
+            if (filterActions[filterType]) {
+                filterActions[filterType]();
+            } else {
+                applyBasicFilter(filterConfig[filterType]);
+            }
+        }
+        
+        function makeDistortionCurve(amount) {
+            const samples = 44100;
+            const curve = new Float32Array(samples);
+            const deg = Math.PI / 180;
+            for (let i = 0; i < samples; i++) {
+                const x = (i * 2) / samples - 1;
+                curve[i] = ((3 + amount) * x * 20 * deg) / (Math.PI + amount * Math.abs(x));
+            }
+            return curve;
+        }
+        
+        function createReverb() {
+            const sampleRate = audioContext.sampleRate;
+            const length = sampleRate * 2;
+            const impulse = audioContext.createBuffer(2, length, sampleRate);
+            for (let channel = 0; channel < 2; channel++) {
+                const channelData = impulse.getChannelData(channel);
+                for (let i = 0; i < length; i++) {
+                    channelData[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / length, 2);
+                }
+            }
+            convolver.buffer = impulse;
         }
 
         function setupRecording(stream) {
@@ -546,9 +1065,9 @@
         }
 
         function enableDownloads() {
-            document.querySelectorAll('input[name="downloadType"]').forEach(radio => {
+            for (const radio of document.querySelectorAll('input[name="downloadType"]')) {
                 radio.disabled = false;
-            });
+            }
             document.getElementById('downloadBtn').disabled = false;
             document.getElementById('uploadBtn').disabled = false;
             document.getElementById('uploadBtn').classList.remove('hidden');
@@ -557,6 +1076,13 @@
         function stopVisualizer() {
             if (audioContext) {
                 audioContext.close();
+                audioFilter = null;
+                compressor = null;
+                convolver = null;
+                delayNode = null;
+                distortionNode = null;
+                gainNode = null;
+                eqFilters = [];
             }
             
             if (isRecording) {
@@ -581,7 +1107,7 @@
             const profilePic = document.createElement('div');
             profilePic.className = 'profile-pic';
             
-            let userPhoto = window.currentUser?.customPhoto || window.currentUser?.googlePhoto || window.currentUser?.facebookPhoto;
+            let userPhoto = globalThis.currentUser?.customPhoto || globalThis.currentUser?.googlePhoto || globalThis.currentUser?.facebookPhoto;
             if (userPhoto) {
                 // Use proxy for Google profile images to bypass CORS
                 if (userPhoto.includes('googleusercontent.com')) {
@@ -593,11 +1119,11 @@
                 img.alt = 'Profile Picture';
                 img.onerror = () => {
                     img.style.display = 'none';
-                    profilePic.textContent = window.currentUser?.username?.charAt(0) || 'P';
+                    profilePic.textContent = globalThis.currentUser?.username?.charAt(0) || 'P';
                 };
                 profilePic.appendChild(img);
             } else {
-                profilePic.textContent = window.currentUser?.username?.charAt(0) || 'P';
+                profilePic.textContent = globalThis.currentUser?.username?.charAt(0) || 'P';
             }
             
             return profilePic;
@@ -697,28 +1223,34 @@
             
             let fftArea, profileArea;
             
-            if (selectedRatio === '9:16') {
-                // Stacked layout
-                profileArea = { x: 0, y: 0, width: compositeCanvas.width, height: compositeCanvas.height / 2 };
-                fftArea = { x: 0, y: compositeCanvas.height / 2, width: compositeCanvas.width, height: compositeCanvas.height / 2 };
+            if (includeProfile) {
+                if (selectedRatio === '9:16') {
+                    // Stacked layout
+                    profileArea = { x: 0, y: 0, width: compositeCanvas.width, height: compositeCanvas.height / 2 };
+                    fftArea = { x: 0, y: compositeCanvas.height / 2, width: compositeCanvas.width, height: compositeCanvas.height / 2 };
+                } else {
+                    // Side by side layout
+                    fftArea = { x: 0, y: 0, width: compositeCanvas.width / 2, height: compositeCanvas.height };
+                    profileArea = { x: compositeCanvas.width / 2, y: 0, width: compositeCanvas.width / 2, height: compositeCanvas.height };
+                }
+                
+                // Draw profile section background
+                const gradient = compositeCtx.createLinearGradient(profileArea.x, profileArea.y, profileArea.x + profileArea.width, profileArea.y + profileArea.height);
+                gradient.addColorStop(0, 'rgba(26, 26, 26, 0.9)');
+                gradient.addColorStop(1, 'rgba(42, 42, 42, 0.9)');
+                compositeCtx.fillStyle = gradient;
+                compositeCtx.fillRect(profileArea.x, profileArea.y, profileArea.width, profileArea.height);
+                
+                // Draw profile picture
+                drawProfileOnComposite(profileArea);
+                
+                // Draw FFT visualization
+                drawFFTOnComposite(fftArea);
             } else {
-                // Side by side layout
-                fftArea = { x: 0, y: 0, width: compositeCanvas.width / 2, height: compositeCanvas.height };
-                profileArea = { x: compositeCanvas.width / 2, y: 0, width: compositeCanvas.width / 2, height: compositeCanvas.height };
+                // Full canvas for FFT only
+                fftArea = { x: 0, y: 0, width: compositeCanvas.width, height: compositeCanvas.height };
+                drawFFTOnComposite(fftArea);
             }
-            
-            // Draw profile section background
-            const gradient = compositeCtx.createLinearGradient(profileArea.x, profileArea.y, profileArea.x + profileArea.width, profileArea.y + profileArea.height);
-            gradient.addColorStop(0, 'rgba(26, 26, 26, 0.9)');
-            gradient.addColorStop(1, 'rgba(42, 42, 42, 0.9)');
-            compositeCtx.fillStyle = gradient;
-            compositeCtx.fillRect(profileArea.x, profileArea.y, profileArea.width, profileArea.height);
-            
-            // Draw profile picture
-            drawProfileOnComposite(profileArea);
-            
-            // Draw FFT visualization
-            drawFFTOnComposite(fftArea);
         }
         
         function drawProfileOnComposite(area) {
@@ -746,7 +1278,7 @@
                 compositeCtx.restore();
             } else {
                 // Draw initial letter
-                const initial = window.currentUser?.username?.charAt(0) || 'P';
+                const initial = globalThis.currentUser?.username?.charAt(0) || 'P';
                 compositeCtx.fillStyle = 'white';
                 compositeCtx.font = `${radius}px Arial`;
                 compositeCtx.textAlign = 'center';
@@ -817,7 +1349,7 @@
 
 
         function getTimestamp() {
-            return new Date().toISOString().replace(/[:.]/g, '-').slice(0, -5);
+            return new Date().toISOString().replaceAll(/[:.]/g, '-').slice(0, -5);
         }
 
         function downloadAudio() {
