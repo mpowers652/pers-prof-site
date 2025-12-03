@@ -44,7 +44,7 @@ async function getSecret(secretName) {
         });
         return version.payload.data.toString();
     } catch (error) {
-        console.log(`Secret ${secretName} not found, using env variable`);
+        console.log(`Secret ${secretName} not found, using env variable: ${error.message}`);
         return null;
     }
 }
@@ -207,7 +207,8 @@ users.push({
     password: hashedPassword,
     role: 'admin',
     subscription: 'full',
-    aiCredits: 1000
+    aiCredits: 1000,
+    createdAt: new Date().toISOString()
 });
 console.log(`Admin user created - Username: admin, Email: ${adminEmail}, Password: ${adminPassword}, Role: admin, Subscription: full`);
 
@@ -221,7 +222,8 @@ users.push({
     password: hashedPremiumPassword,
     role: 'user',
     subscription: 'premium',
-    aiCredits: 500
+    aiCredits: 0,
+    createdAt: new Date().toISOString()
 });
 console.log(`Premium user created - Username: premium, Password: ${premiumPassword}, Role: user, Subscription: premium`);
 
@@ -263,7 +265,7 @@ function initializePassport() {
                 googlePhoto: profile.photos?.[0]?.value,
                 role: 'user',
                 subscription: 'basic',
-                aiCredits: 100
+                aiCredits: 0
             };
             users.push(user);
             console.log(`Created new Google user: ${user.email}, role: ${user.role}, id: ${user.id}`);
@@ -291,7 +293,7 @@ function initializePassport() {
                 facebookPhoto: profile.photos?.[0]?.value,
                 role: 'user',
                 subscription: 'basic',
-                aiCredits: 100
+                aiCredits: 0
             };
             users.push(user);
         }
@@ -503,17 +505,40 @@ app.post('/contact', express.json(), async (req, res) => {
     
     console.log('Contact form submission:', { name, email, subject, message });
     
-    if (!name || !email || !subject || !message) {
-        return res.json({ success: false, message: 'All fields required' });
+    if (!email || !subject || !message) {
+        return res.json({ success: false, message: 'Email, subject, and message are required' });
     }
     
     // Handle data deletion request
     if (subject === 'Data Deletion Request') {
         const userIndex = users.findIndex(u => u.email === email);
         if (userIndex !== -1) {
+            const user = users[userIndex];
+            const hasFacebookId = !!user.facebookId;
             users.splice(userIndex, 1);
             console.log(`User data deleted for email: ${email}`);
-            return res.json({ success: true, message: 'Your data has been deleted successfully.' });
+            
+            // Also delete from Facebook if user has Facebook ID
+            if (hasFacebookId) {
+                try {
+                    const payload = Buffer.from(JSON.stringify({ user_id: user.facebookId })).toString('base64');
+                    const signedRequest = `signature.${payload}`;
+                    
+                    await fetch(`${req.protocol}://${req.get('host')}/facebook/data-deletion`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                        body: `signed_request=${signedRequest}`
+                    });
+                    console.log(`Facebook data deletion triggered for ID: ${user.facebookId}`);
+                } catch (fbError) {
+                    console.error('Facebook deletion notification failed:', fbError);
+                }
+            }
+            
+            const message = hasFacebookId 
+                ? 'Your data has been deleted successfully. Facebook data deletion has also been initiated.'
+                : 'Your data has been deleted successfully.';
+            return res.json({ success: true, message });
         } else {
             return res.json({ success: true, message: 'No account found with that email address.' });
         }
@@ -529,9 +554,9 @@ app.post('/contact', express.json(), async (req, res) => {
         const emailContent = [
             `From: ${process.env.GMAIL_USER}`,
             `To: ${process.env.GMAIL_USER}`,
-            `Subject: Contact Form: ${subject} - ${name}`,
+            `Subject: Contact Form: ${subject}${name ? ' - ' + name : ''}`,
             '',
-            `Name: ${name}`,
+            name ? `Name: ${name}` : 'Name: (Not provided)',
             `Email: ${email}`,
             `Subject: ${subject}`,
             `Message: ${message}`
@@ -558,7 +583,7 @@ app.post('/contact', express.json(), async (req, res) => {
                 const notificationPhone = await loadConditionalSecret('NOTIFICATION_PHONE_NUMBER', 'NOTIFICATION_PHONE_NUMBER');
                 const client = twilio(twilioSid, twilioToken);
                 await client.messages.create({
-                    body: `New contact form submission from ${name} (${email}): ${subject}`,
+                    body: `New contact form submission from ${name || 'Anonymous'} (${email}): ${subject}`,
                     from: twilioPhone,
                     to: notificationPhone
                 });
@@ -741,7 +766,8 @@ app.post('/auth/register', express.json(), async (req, res) => {
             role: 'user',
             subscription: 'basic',
             openaiKey,
-            aiCredits: 100
+            aiCredits: 0,
+            createdAt: new Date().toISOString()
         };
         users.push(user);
         
@@ -837,34 +863,74 @@ app.get('/auth/google/callback', (req, res, next) => {
     });
 });
 
+// Serve Facebook App ID for client-side SDK
+app.get('/auth/facebook/config', (req, res) => {
+    res.json({ appId: process.env.FACEBOOK_APP_ID || '' });
+});
+
+// Facebook JS SDK authentication endpoint
+app.post('/auth/facebook/sdk', express.json(), async (req, res) => {
+    const { accessToken, userID } = req.body;
+    if (!accessToken || !userID) {
+        return res.status(400).json({ error: 'Missing access token or user ID' });
+    }
+    
+    try {
+        // Verify token with Facebook Graph API
+        const response = await fetch(`https://graph.facebook.com/me?access_token=${accessToken}&fields=id,name,email,picture`);
+        const profile = await response.json();
+        
+        if (profile.id !== userID) {
+            return res.status(401).json({ error: 'Invalid token' });
+        }
+        
+        let user = users.find(u => u.facebookId === profile.id);
+        if (!user) {
+            user = { 
+                id: users.length + 1, 
+                facebookId: profile.id, 
+                username: profile.name, 
+                email: profile.email || `${profile.id}@facebook.local`,
+                facebookPhoto: profile.picture?.data?.url,
+                role: 'user',
+                subscription: 'basic',
+                aiCredits: 0
+            };
+            users.push(user);
+        }
+        
+        const token = jwt.sign({ id: user.id, iat: Math.floor(Date.now() / 1000) }, 'secret', { expiresIn: '1h' });
+        res.cookie('token', token, { httpOnly: true, secure: process.env.NODE_ENV === 'production', path: '/', sameSite: 'lax' });
+        res.json({ success: true, token });
+    } catch (error) {
+        console.error('Facebook SDK auth error:', error);
+        res.status(500).json({ error: 'Authentication failed' });
+    }
+});
+
 app.get('/auth/facebook', (req, res, next) => {
     if (!process.env.FACEBOOK_APP_ID || !process.env.FACEBOOK_APP_SECRET) {
-        return res.status(500).send('Facebook OAuth not configured');
+        return res.redirect('/login?fbsdk=1');
     }
     try {
         passport.authenticate('facebook', { scope: ['email'] })(req, res, next);
     } catch (error) {
-        if (error.message.includes('Unknown authentication strategy')) {
-            return res.status(500).send('Facebook OAuth not configured');
-        }
-        throw error;
+        return res.redirect('/login?fbsdk=1');
     }
 });
 
 app.get('/auth/facebook/callback', (req, res, next) => {
-    // Check if this is a legitimate OAuth callback with proper state
     if (!req.query.code && !req.query.error) {
-        return res.redirect('/login');
+        return res.redirect('/login?fbsdk=1');
     }
     
-    passport.authenticate('facebook', { failureRedirect: '/login' })(req, res, (err) => {
+    passport.authenticate('facebook', { failureRedirect: '/login?fbsdk=1' })(req, res, (err) => {
         if (err || !req.user) {
-            return res.redirect('/login');
+            return res.redirect('/login?fbsdk=1');
         }
         
         const token = jwt.sign({ id: req.user.id, iat: Math.floor(Date.now() / 1000) }, 'secret', { expiresIn: '1h' });
         req.session.authToken = token;
-        // Set token as httpOnly cookie
         res.cookie('token', token, { httpOnly: true, secure: process.env.NODE_ENV === 'production', maxAge: 3600000 });
         res.redirect('/');
     });
@@ -891,7 +957,8 @@ app.get('/auth/verify', (req, res) => {
                 facebookPhoto: user.facebookPhoto,
                 profileImage: user.profileImage,
                 openaiKey: user.openaiKey,
-                aiCredits: user.aiCredits || 0
+                aiCredits: user.aiCredits || 0,
+                createdAt: user.createdAt
             } 
         });
     } catch {
@@ -1024,6 +1091,10 @@ app.get('/contact', (req, res) => {
 
 // Privacy Policy route
 app.get('/privacy-policy', (req, res) => {
+    res.sendFile(path.join(__dirname, 'privacy-policy.html'));
+});
+
+app.get('/data-deletion', (req, res) => {
     res.sendFile(path.join(__dirname, 'privacy-policy.html'));
 });
 
@@ -1174,12 +1245,68 @@ app.post('/delete-my-data', express.json(), async (req, res) => {
     
     const userIndex = users.findIndex(u => u.email === email);
     if (userIndex !== -1) {
+        const user = users[userIndex];
+        const hasFacebookId = !!user.facebookId;
         users.splice(userIndex, 1);
         console.log(`User data deleted for email: ${email}`);
-        res.json({ success: true, message: 'Your data has been deleted successfully.' });
+        
+        // Also delete from Facebook if user has Facebook ID
+        if (hasFacebookId) {
+            try {
+                const payload = Buffer.from(JSON.stringify({ user_id: user.facebookId })).toString('base64');
+                const signedRequest = `signature.${payload}`;
+                
+                await fetch(`${req.protocol}://${req.get('host')}/facebook/data-deletion`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                    body: `signed_request=${signedRequest}`
+                });
+                console.log(`Facebook data deletion triggered for ID: ${user.facebookId}`);
+            } catch (fbError) {
+                console.error('Facebook deletion notification failed:', fbError);
+            }
+        }
+        
+        res.json({ 
+            success: true, 
+            message: 'Your data has been deleted successfully.',
+            facebookDeleted: hasFacebookId
+        });
     } else {
         res.json({ success: true, message: 'No account found with that email address.' });
     }
+});
+
+// Facebook Data Deletion Callback (required by Facebook Platform Policy)
+app.post('/facebook/data-deletion', express.urlencoded({ extended: true }), async (req, res) => {
+    const signedRequest = req.body.signed_request;
+    if (!signedRequest) {
+        return res.status(400).json({ error: 'Missing signed_request' });
+    }
+    
+    try {
+        const [encodedSig, payload] = signedRequest.split('.');
+        const data = JSON.parse(Buffer.from(payload, 'base64').toString());
+        const userID = data.user_id;
+        
+        const userIndex = users.findIndex(u => u.facebookId === userID);
+        if (userIndex !== -1) {
+            users.splice(userIndex, 1);
+            console.log(`Facebook user data deleted for ID: ${userID}`);
+        }
+        
+        const confirmationCode = `${userID}_${Date.now()}`;
+        const statusUrl = `${req.protocol}://${req.get('host')}/facebook/deletion-status?id=${confirmationCode}`;
+        
+        res.json({ url: statusUrl, confirmation_code: confirmationCode });
+    } catch (error) {
+        console.error('Facebook data deletion error:', error);
+        res.status(500).json({ error: 'Deletion failed' });
+    }
+});
+
+app.get('/facebook/deletion-status', (req, res) => {
+    res.send('Data deletion completed successfully.');
 });
 
 // Create admin endpoint for tests

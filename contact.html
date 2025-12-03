@@ -13,7 +13,7 @@
         <section>
             <h2>Contact Us</h2>
             <form id="contactForm" class="contact-form">
-                <input type="text" id="name" placeholder="Your Name" required>
+                <input type="text" id="name" placeholder="Your Name (Optional)">
                 <input type="email" id="email" placeholder="Your Email" required>
                 <select title="subject" id="subject" required>
                     <option value="">Select Subject</option>
@@ -54,8 +54,9 @@
                 const data = await response.json();
                 
                 if (data.success) {
+                    let message = data.message || 'Thank you for your message! We\'ll get back to you soon.';
                     document.getElementById('contactResult').innerHTML = 
-                        '<p style="color: green;">Thank you for your message! We\'ll get back to you soon.</p>';
+                        `<p style="color: green;">${message}</p>`;
                     this.reset();
                 } else {
                     document.getElementById('contactResult').innerHTML = 

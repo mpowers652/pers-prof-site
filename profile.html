@@ -43,6 +43,7 @@
                                 <p>Email: ${user.email || 'Not provided'}</p>
                                 <p>Role: <span style="background: ${user.role === 'admin' ? '#4CAF50' : '#2196F3'}; color: white; padding: 0.25rem 0.5rem; border-radius: 4px; font-size: 0.8rem;">${user.role?.toUpperCase() || 'USER'}</span></p>
                                 <p>Subscription: <span style="background: ${user.subscription === 'full' ? '#4CAF50' : user.subscription === 'premium' ? '#FF9800' : '#757575'}; color: white; padding: 0.25rem 0.5rem; border-radius: 4px; font-size: 0.8rem;">${user.subscription?.toUpperCase() || 'BASIC'}</span></p>
+                                <p>Date Created: ${user.createdAt ? new Date(user.createdAt).toLocaleDateString() : 'Unknown'}</p>
                             </div>
                         </div>
                         
